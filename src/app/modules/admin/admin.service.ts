@@ -1269,7 +1269,7 @@ const adminDashboardOverview = async () => {
     _avg: { totalSavedTimes: true },
   });
 
-  console.log(timeSavedAggregate);
+  // console.log(timeSavedAggregate);
 
   const averageTimeSaved = Math.round(
     (timeSavedAggregate._avg.totalSavedTimes ?? 0) / 60,

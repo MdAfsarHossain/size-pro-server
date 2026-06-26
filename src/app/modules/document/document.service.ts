@@ -1108,7 +1108,7 @@ const generateCSV = async (documentId: string) => {
     throw new Error("Document not found");
   }
 
-  console.log("document", document);
+  // console.log("document", document);
   /*
   document {
   id: '69c9efe93ce3428f5fdae015',

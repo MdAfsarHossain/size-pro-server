@@ -25,7 +25,7 @@ const saveToDrive = async (req: Request, res: Response) => {
     req.body.folderId || process.env.GOOGLE_DRIVE_FOLDER_ID || null;
 
   // const result = await FileSaveServices.saveToDrive(userId, file);
-  console.log(req.file);
+  // console.log(req.file);
 
   const result = await FileSaveServices.uploadFileToDrive({
     fileName: originalname,

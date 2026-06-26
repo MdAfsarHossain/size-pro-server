@@ -16,7 +16,7 @@ const authUrl = oauth2Client.generateAuthUrl({
   prompt: "consent", // ✅ forces refresh_token to be returned
 });
 
-console.log("Visit this URL:", authUrl);
+// console.log("Visit this URL:", authUrl);
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -24,7 +24,7 @@ const rl = readline.createInterface({
 });
 rl.question("Paste the code from the URL here: ", async (code) => {
   const { tokens } = await oauth2Client.getToken(code);
-  console.log("✅ Your tokens:", tokens);
+  // console.log("✅ Your tokens:", tokens);
   // Copy refresh_token to your .env
   rl.close();
 });

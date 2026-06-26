@@ -82,7 +82,7 @@ import { formatDateAndTime } from "../../utils/formatDate";
 // Save to google drive
 const saveToDrive = async (userId: string, file: any, folderName?: string) => {
   try {
-    console.log("Received file:", file);
+    // console.log("Received file:", file);
 
     if (!file) {
       throw new Error("No file provided");
@@ -317,7 +317,7 @@ const uploadFileToDrive = async ({
   const folderId = folderRes.data.id!;
   const folderLink = folderRes.data.webViewLink!;
 
-  console.log(folderLink);
+  // console.log(folderLink);
 
   // Make the folder publicly readable
   await drive.permissions.create({
@@ -445,10 +445,10 @@ const convertAndUploadCSV = async (
     // });
 
     const formatedCsv = csvBuffer.toString("utf-8");
-    console.log(formatedCsv);
+    // console.log(formatedCsv);
 
     const csvFile = Buffer.from(formatedCsv, "utf-8");
-    console.log(csvFile);
+    // console.log(csvFile);
 
     return {
       success: true,
