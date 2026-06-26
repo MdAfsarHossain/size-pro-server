@@ -59,7 +59,7 @@ const updateMyProfile = async (userId: string, payload: any, file: any) => {
   }
 
   // console.log(payload);
-  // image: '/home/afsarhossain/AfsarHossain/Dec25/ajpropl-server/public/uploads/Afsar-1770272229134.jpg'
+  // image: '/home/afsarhossain/AfsarHossain/Dec25/size-pro-server/public/uploads/Afsar-1770272229134.jpg'
   // Split the string by / and get the last element
   // const image = payload.image.split("public/").pop();
   // payload.image = image;

@@ -20,8 +20,8 @@ const uploadToS3 = async (
   }
 
   // console.log(file);
-  // ajpropl-uploads-prod
-  // ajpropl-images/
+  // size-pro-uploads-prod
+  // size-pro-images/
   const Bucket = config.S3.bucketName || "";
   const Key = folder
     ? `ajpropl-images/${folder}/${file.originalname}`
