@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  USER
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  BLOCKED
+  AVAILABLE
+  UNAVAILABLE
+  SUSPENDED
+}
+
+model User {
+  id                     String  @id @default(auto()) @map("_id") @db.ObjectId
+  firstName              String
+  lastName               String
+  email                  String  @unique
+  password               String?
+  image                  String?
+  location               String?
+  phone                  String?
+  totalCreatedProducts   Int     @default(0)
+  totalGeneratedProducts Int     @default(0)
+  totalSavedTimes        Int     @default(0)
+  fcmToken               String?
+  role                   Role    @default(ADMIN)
+
+  status    UserStatus @default(ACTIVE)
+  lastLogin DateTime?
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  documents       Document[]
+  generatedImages GeneratedImage[]
+  savedFiles      SavedFile[]
+
+  @@map("users")
+}
+
+model OTP {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String @db.ObjectId
+  otpCode String
+
+  expiry     DateTime
+  created_at DateTime @default(now())
+
+  @@unique([userId, otpCode])
+  @@map("otp")
+}
+
+model SocialMedia {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  fbLink      String?
+  instaLink   String?
+  twitterLink String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("socialMedia")
+}
+
+model Document {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // title       String?
+  // productType ProductType? @default(CLOTH)
+  // model       ModelType[]  @default([DIMENSIONS])
+  // mannequin   String
+
+  // AI Generated
+  aiGenerated Json
+  isDeleted   Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("document")
+}
+
+model SavedFile {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title     String
+  fileUrl   String
+  isDeleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("savedFile")
+}
+
+model GeneratedImage {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId       String  @db.ObjectId
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  imageDetails Json
+  isDeleted    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("generatedImage")
+}
+
+enum ProductType {
+  CLOTH
+  DRESS
+}
+
+enum ModelType {
+  DIMENSIONS
+  AI_VIRTUAL
+  MANNEQUIN
+  BACKGROUND_REMOVAL
+  MODEL
+  IMAGE_DIAGRAM
+}
+
+// model RecentActivity {
+//   id String @id @default(auto()) @map("_id") @db.ObjectId
+
+//   userId String @db.ObjectId
+//   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+
+//   @@index([id])
+//   @@map("recentActivity")
+// }
+
+// “DIMENSIONS”, 
+// “AI_VIRTUAL”, 
+// “MANNEQUIN”, 
+// “BACKGROUND_REMOVAL”, 
+// “MODEL”, 
+// “IMAGE_DIAGRAM”
