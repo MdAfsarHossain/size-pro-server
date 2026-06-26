@@ -24,58 +24,6 @@ interface DocumentData {
   // imageDiagram?: string;
 }
 
-// Create Document
-// const createDocument = async (
-//   userId: string,
-//   documentData: any,
-//   files: any,
-// ) => {
-//   // console.log("documentData", documentData);
-//   // console.log(documentData, files);
-
-//   const formData = new FormData();
-//   formData.append("features_json", JSON.stringify(documentData));
-//   formData.append("seller_id", userId);
-//   files.forEach((file: any) => {
-//     const fileBuffer = fs.readFileSync(file.path);
-//     const blob = new Blob([fileBuffer], { type: file.mimetype });
-//     formData.append("images", blob, file.originalname);
-//   });
-
-//   // console.log("formData", formData);
-//   let response;
-
-//   try {
-//     response = await axios.post(`${process.env.AI_API}/generate`, formData, {
-//       headers: {
-//         "Content-Type": "multipart/form-data",
-//       },
-//     });
-//   } catch (error) {
-//     console.log(`AI Post Error.`);
-//     console.log(error);
-//   }
-
-//   // console.log("response.data", response?.data);
-
-//   const document = await prisma.document.create({
-//     data: {
-//       userId,
-//       aiGenerated: response?.data,
-//     },
-//   });
-
-//   const result = response?.data?.product.images_batch.map(async (item: any) => {
-//     await prisma.generatedImage.create({
-//       data: {
-//         userId,
-//         imageDetails: item,
-//       },
-//     });
-//   });
-
-//   return document;
-// };
 
 // Create Document
 const createDocument = async (
@@ -83,17 +31,9 @@ const createDocument = async (
   documentData: any,
   files: any,
 ) => {
-  // console.log("documentData", documentData);
-  // console.log(documentData, files);
-
   const language = documentData.language;
   const features = documentData.features;
-  // console.log(documentData);
 
-  // console.log(language, features);
-  // // return language;
-
-  //mayesha
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -108,7 +48,6 @@ const createDocument = async (
 
   const fullName = `${user.firstName} ${user.lastName}`;
   let products = 0;
-  //mayesha
 
   const formData = new FormData();
   // formData.append("features_json", JSON.stringify(documentData)); // It's work
@@ -116,22 +55,20 @@ const createDocument = async (
   formData.append("seller_id", userId);
   formData.append("seller_name", fullName);
   formData.append("language", language);
-  files.forEach((file: any) => {
+  files.images.forEach((file: any) => {
     products++;
     const fileBuffer = fs.readFileSync(file.path);
     const blob = new Blob([fileBuffer], { type: file.mimetype });
     formData.append("images", blob, file.originalname);
   });
 
-  // const generatedImages = documentData.reduce(
-  //   (sum: any, item: any) => sum + item.features.length,
-  //   0,
-  // );
-
-  // let totalSavedTimes = documentData.reduce(
-  //   (sum: any, item: any) => sum + item.features.length,
-  //   0,
-  // );
+  // Backparts Image 
+   files.backpart_images.forEach((file: any) => {
+    // products++;
+    const fileBuffer = fs.readFileSync(file.path);
+    const blob = new Blob([fileBuffer], { type: file.mimetype });
+    formData.append("backpart_images", blob, file.originalname);
+  });
 
   const generatedImages = features.reduce(
     (sum: any, item: any) => sum + item.features.length,
@@ -144,10 +81,6 @@ const createDocument = async (
   );
 
   totalSavedTimes = totalSavedTimes * 15;
-
-  // console.log(generatedImages);
-
-  // console.log("formData", formData);
   let response;
 
   try {
@@ -546,7 +479,7 @@ const myAllDocuments = async (userId: string, query: any) => {
         imageDetails: true, // Keep as true since it's JSON
         isDeleted: true,
         createdAt: true,
-        //mayesha
+        //#
         user: {
           select: {
             firstName: true,
@@ -566,7 +499,7 @@ const myAllDocuments = async (userId: string, query: any) => {
   }
 
   const finalResult = documents.map((document) => {
-    //mayesha
+    //#
     const sellerName = `${document.user.firstName} ${document.user.lastName}`;
 
     
@@ -591,7 +524,7 @@ const myAllDocuments = async (userId: string, query: any) => {
       // ...document,
       // imageDetails, // Include the parsed imageDetails
       id: document.id,
-      sellerName, //mayesha
+      sellerName, //#
       product_title,
       product_category,
       isPhysical: imageDetails?.isPhysical?.length > 0 || false,
@@ -655,7 +588,7 @@ const myAllDocuments = async (userId: string, query: any) => {
 const getDocument = async (documentId: string) => {
   const document = await prisma.generatedImage.findUnique({
     where: { id: documentId },
-    //mayesha
+    //#
     include: {
       user: {
         select: {

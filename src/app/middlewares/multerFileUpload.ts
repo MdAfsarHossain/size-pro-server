@@ -52,7 +52,11 @@ const profileImage = upload.single("profileImage");
 const uploadImage = upload.single("image");
 const uploadCategoryIcon = upload.single("categoryIcon");
 const uploadProductImage = upload.array("productImage", 5);
-const documentImages = upload.array("images", 100);
+// const documentImages = upload.array("images", 100);
+const documentImages = upload.fields([
+  { name: "images", maxCount: 100 },
+  { name: "backpart_images", maxCount: 100 },
+]);
 // const driveImage = upload.single("driveImage");
 
 const memoryStorage = multer.memoryStorage();
