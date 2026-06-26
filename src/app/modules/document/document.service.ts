@@ -151,112 +151,6 @@ const createDocument = async (
 // const myAllDocuments = async (userId: string, query: any) => {
 //   const { page, limit, sortBy, sortOrder, search } = query;
 
-//   const whereCondition: Prisma.GeneratedImageWhereInput = { userId };
-
-//   const pageNumber = parseInt(page) || 1;
-//   const limitNumber = parseInt(limit) || 10;
-//   const skip = (pageNumber - 1) * limitNumber;
-
-//   const sortOption: { [key: string]: string } = {};
-
-//   if (sortBy && sortOrder) {
-//     sortOption[sortBy] = sortOrder;
-//   }
-
-//   if (search) {
-//     whereCondition.OR = [
-//       // { title: { contains: search, mode: "insensitive" } },
-//       // { productType: { contains: search, mode: "insensitive" } },
-//       // { model: { contains: search, mode: "insensitive" } },
-//     ];
-//   }
-
-//   // Construct a unique cache key that includes the userId, page, limit, sort, and search
-//   const cacheKey = `documents:${userId}:page:${pageNumber}:limit:${limitNumber}:sort:${sortBy || "createdAt"}_${sortOrder || "desc"}:search:${search || ""}`;
-
-//   // try {
-//   // Get the actual Redis client instance
-//   const redisClient = await createRedisClient();
-//   // Check Redis cache first
-//   const cachedData = await redisClient.get(cacheKey);
-
-//   if (cachedData) {
-//     console.log(`✅ Cache hit for ${cacheKey}`);
-//     const parsedData = JSON.parse(cachedData);
-
-//     const total = await prisma.generatedImage.count({
-//       where: { ...whereCondition, isDeleted: false },
-//     });
-
-//     const totalPages = Math.ceil(total / limitNumber);
-
-//     return {
-//       data: parsedData,
-//       meta: {
-//         page: pageNumber,
-//         limit: limitNumber,
-//         total: total,
-//         hasNextPage: totalPages > pageNumber,
-//         hasPrevPage: pageNumber > 1,
-//         totalPage: totalPages,
-//       },
-//     };
-//   }
-
-//   console.log(`❌ Cache miss for ${cacheKey}`);
-
-//   const documents = await prisma.generatedImage.findMany({
-//     where: { ...whereCondition, isDeleted: false },
-//     select: {
-//       id: true,
-//       imageDetails: {
-//         include: {
-//           product_details: true,
-//           image: true,
-//           imageType: true,
-//         },
-//       },
-//       isDeleted: true,
-//       createdAt: true,
-//     },
-//     // orderBy: sortOption,
-//     orderBy: { createdAt: "desc" },
-//     skip,
-//     take: limitNumber,
-//   });
-
-//   const total = await prisma.generatedImage.count({
-//     where: { ...whereCondition, isDeleted: false },
-//   });
-
-//   const finalResult = documents.map((document) => ({
-//     ...document,
-//     dateFormat: formatDateAndTime(document.createdAt),
-//     // model: document.model.split(","),
-//   }));
-
-//   await redisClient.setEx(cacheKey, 60, JSON.stringify(finalResult));
-
-//   return {
-//     data: finalResult,
-//     meta: {
-//       page: pageNumber,
-//       limit: limitNumber,
-//       total,
-//       hasNextPage: pageNumber < Math.ceil(total / limitNumber),
-//       hasPrevPage: pageNumber > 1,
-//       totalPage: Math.ceil(total / limitNumber),
-//     },
-//   };
-//   // } catch (error) {
-//   //   console.log("❌ Failed to set cache for documents");
-//   // }
-// };
-
-// My All Documents
-// const myAllDocuments = async (userId: string, query: any) => {
-//   const { page, limit, sortBy, sortOrder, search } = query;
-
 //   const whereCondition: Prisma.GeneratedImageWhereInput = {
 //     userId,
 //     isDeleted: false,
@@ -420,18 +314,6 @@ const myAllDocuments = async (userId: string, query: any) => {
       userId: { $oid: userId },
       isDeleted: false,
       $or: [
-        // {
-        //   "imageDetails.generated_skus.product_details.product_title":
-        //     searchRegex,
-        // },
-        // { "imageDetails.generated_skus.product_details.category": searchRegex },
-        // { "imageDetails.generated_skus.product_details.brand": searchRegex },
-        // {
-        //   "imageDetails.generated_skus.product_details.dress_type": searchRegex,
-        // },
-        // { "imageDetails.generated_skus.product_code": searchRegex },
-        // { "imageDetails.generated_skus.description": searchRegex },
-
         { "imageDetails.product_title": searchRegex },
       ],
     };
