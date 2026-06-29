@@ -4,7 +4,6 @@ import ApiError from "../../errors/ApiError";
 import { S3Uploader } from "../../lib/S3Uploader";
 
 const getMyProfile = async (userId: string) => {
-  // console.log(user);
   const user = await prisma.user.findUnique({
     where: {
       id: userId,
@@ -16,16 +15,12 @@ const getMyProfile = async (userId: string) => {
       email: true,
       phone: true,
       location: true,
-      // socialMedia: true,
       image: true,
       role: true,
     },
   });
 
   if (!user) throw new ApiError(httpStatus.NOT_FOUND, "User not found");
-
-  // const socialMedia = await prisma.socialMedia.findFirst({});
-  // console.log(socialMedia);
 
   return user;
 };
@@ -39,9 +34,6 @@ const updateMyProfile = async (userId: string, payload: any, file: any) => {
   });
 
   if (!isUserExist) throw new ApiError(httpStatus.NOT_FOUND, "User not found");
-
-  // const imageFile = file.image ? file.image[0] : null;
-  // console.log(imageFile);
 
   if (file) {
     try {
@@ -58,12 +50,6 @@ const updateMyProfile = async (userId: string, payload: any, file: any) => {
     }
   }
 
-  // console.log(payload);
-  // image: '/home/afsarhossain/AfsarHossain/Dec25/size-pro-server/public/uploads/Afsar-1770272229134.jpg'
-  // Split the string by / and get the last element
-  // const image = payload.image.split("public/").pop();
-  // payload.image = image;
-
   const user = await prisma.user.update({
     where: {
       id: userId,
@@ -76,7 +62,6 @@ const updateMyProfile = async (userId: string, payload: any, file: any) => {
       email: true,
       phone: true,
       location: true,
-      // socialMedia: true,
       image: true,
       role: true,
     },
