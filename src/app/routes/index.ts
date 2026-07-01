@@ -4,6 +4,7 @@ import { AdminRouters } from "../modules/admin/admin.route";
 import { UsersRoutes } from "../modules/users/users.route";
 import { DocumentRouters } from "../modules/document/document.route";
 import { FileSaveRouters } from "../modules/fileSave/fileSave.route";
+import { FeatureRoute } from "../modules/feature/feature.route";
 
 const router = express.Router();
 
@@ -27,6 +28,10 @@ const moduleRoutes = [
   {
     path: "/file-save",
     route: FileSaveRouters,
+  },
+  {
+    path: "/feature",
+    route: FeatureRoute,
   },
 ];
 
