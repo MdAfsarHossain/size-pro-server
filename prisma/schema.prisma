@@ -115,8 +115,8 @@ model SavedFile {
 model GeneratedImage {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  userId       String  @db.ObjectId
-  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   imageDetails Json
   isDeleted    Boolean @default(false)
@@ -139,6 +139,33 @@ enum ModelType {
   BACKGROUND_REMOVAL
   MODEL
   IMAGE_DIAGRAM
+}
+
+model Feature {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  size             String[]
+  categoryEnglish  String[]
+  categoryPolish   String[]
+  vendorsEnglish   String[]
+  vendorPolish     String[]
+  fabricEnglish    String[]
+  fabricPolish     String[]
+  genderEnglish    String[]
+  genderPolish     String[]
+  colorsEnglish    String[]
+  colorsPolish     String[]
+  conditionEnglish String[]
+  conditionPolish  String[]
+  featureEnglish   String[]
+  featurePolish    String[]
+  isPublished      Boolean  @default(false)
+  status           String
+  customFields     Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("feature")
 }
 
 // model RecentActivity {
