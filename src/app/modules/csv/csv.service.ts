@@ -1,6 +1,6 @@
 const parseAndLogCsv = async (file: Express.Multer.File) => {
-  console.log(file);
-  
+  // console.log(file);
+
   const csvContent = file.buffer.toString("utf-8");
 
   // Custom CSV parser to handle quotes, escaped quotes, newlines, commas, etc.
