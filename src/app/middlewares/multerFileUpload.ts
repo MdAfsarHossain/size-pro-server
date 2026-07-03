@@ -67,6 +67,7 @@ const driveImage = multer({
 }).single("driveImage");
 
 const csvFile = upload.single("csvFile");
+const testFile = multer({ storage: memoryStorage }).single("file");
 
 // Export file uploader methods
 export const fileUploader = {
@@ -85,4 +86,5 @@ export const fileUploader = {
   documentImages,
   driveImage,
   csvFile,
+  testFile
 };
