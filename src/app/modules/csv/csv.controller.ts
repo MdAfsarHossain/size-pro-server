@@ -20,6 +20,24 @@ const uploadCsv = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const parseProductVendorsCsv = catchAsync(
+  async (req: Request, res: Response) => {
+    if (!req.file) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Please upload a CSV file!");
+    }
+
+    const result = await CsvService.parseProductVendorsCsv(req.file);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "CSV parsed and logged successfully!",
+      data: result,
+    });
+  },
+);
+
 export const CsvController = {
   uploadCsv,
+  parseProductVendorsCsv,
 };

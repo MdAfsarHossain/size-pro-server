@@ -4,10 +4,12 @@ import { fileUploader } from "../../middlewares/multerFileUpload";
 
 const router = Router();
 
+router.post("/upload", fileUploader.testFile, CsvController.uploadCsv);
+
 router.post(
-  "/upload",
+  "/product-vendors",
   fileUploader.testFile,
-  CsvController.uploadCsv
+  CsvController.parseProductVendorsCsv,
 );
 
 export const CsvRoutes = router;
