@@ -36,7 +36,12 @@ const getFastFeature = async () => {
       createdAt: "desc", // or updatedAt: 'desc'
     },
   });
-  return result;
+  const productVendor = await prisma.productVendor.findFirst();
+  const data = {
+    ...result,
+    productVendor: productVendor?.brands_name || [],
+  };
+  return data;
 };
 
 // Update Feature
