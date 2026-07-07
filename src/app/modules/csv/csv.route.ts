@@ -11,5 +11,8 @@ router.post(
   fileUploader.testFile,
   CsvController.parseProductVendorsCsv,
 );
+router.post("/create-product-vendor", CsvController.crateProductVendor);
+router.get("/product-vendor", CsvController.getProductVendor);
+router.delete("/product-vendor", CsvController.deleteProductVendor);
 
 export const CsvRoutes = router;

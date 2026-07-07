@@ -168,6 +168,16 @@ model Feature {
   @@map("feature")
 }
 
+model ProductVendor {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  brands_name String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("product-vendor")
+}
+
 // model RecentActivity {
 //   id String @id @default(auto()) @map("_id") @db.ObjectId
 

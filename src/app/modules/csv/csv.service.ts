@@ -1,3 +1,5 @@
+import prisma from "../../lib/prisma";
+
 const parseAndLogCsv = async (file: Express.Multer.File) => {
   // console.log(file);
 
@@ -158,10 +160,51 @@ const parseProductVendorsCsv = async (file: Express.Multer.File) => {
 
   // return { headers, data, productVendors };
 
-  return { headers, productVendors };
+  const result = await crateProductVendor(productVendors);
+  return result;
+};
+
+const crateProductVendor = async (productVendors: string[]) => {
+  const existingData = await prisma.productVendor.findFirst();
+
+  // Clean the input to avoid empty strings/whitespaces
+  const incomingVendors = productVendors
+    ? productVendors.map((v) => v.trim()).filter(Boolean)
+    : [];
+
+  if (existingData) {
+    const updatedBrandsName = Array.from(
+      new Set([...existingData.brands_name, ...incomingVendors]),
+    );
+    const result = await prisma.productVendor.update({
+      where: { id: existingData.id },
+      data: { brands_name: updatedBrandsName },
+    });
+    return result;
+  } else {
+    const result = await prisma.productVendor.create({
+      data: { brands_name: incomingVendors },
+    });
+    return result;
+  }
+};
+
+// Get product vendor
+
+const getProductVendor = async () => {
+  const existingData = await prisma.productVendor.findFirst();
+  return existingData ? existingData.brands_name : [];
+};
+
+const deleteProductVendor = async () => {
+  const result = await prisma.productVendor.deleteMany({});
+  return result;
 };
 
 export const CsvService = {
   parseAndLogCsv,
   parseProductVendorsCsv,
+  crateProductVendor,
+  getProductVendor,
+  deleteProductVendor,
 };
