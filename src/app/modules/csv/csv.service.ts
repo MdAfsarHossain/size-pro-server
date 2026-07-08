@@ -173,17 +173,40 @@ const crateProductVendor = async (productVendors: string[]) => {
     : [];
 
   if (existingData) {
-    const updatedBrandsName = Array.from(
-      new Set([...existingData.brands_name, ...incomingVendors]),
+    // Filter out brand names that already exist in the database (case-insensitive check)
+    const existingBrandsSet = new Set(
+      existingData.brands_name.map((b) => b.toLowerCase())
     );
+
+    const newVendors = incomingVendors.filter(
+      (vendor) => !existingBrandsSet.has(vendor.toLowerCase())
+    );
+
+    // If no new brands are to be added, skip database update and return existing record
+    if (newVendors.length === 0) {
+      return existingData;
+    }
+
+    const updatedBrandsName = [...existingData.brands_name, ...newVendors];
     const result = await prisma.productVendor.update({
       where: { id: existingData.id },
       data: { brands_name: updatedBrandsName },
     });
     return result;
   } else {
+    // For new creation, ensure uniqueness among incoming vendors (case-insensitively)
+    const uniqueIncomingVendors: string[] = [];
+    const seen = new Set<string>();
+    for (const vendor of incomingVendors) {
+      const lower = vendor.toLowerCase();
+      if (!seen.has(lower)) {
+        seen.add(lower);
+        uniqueIncomingVendors.push(vendor);
+      }
+    }
+
     const result = await prisma.productVendor.create({
-      data: { brands_name: incomingVendors },
+      data: { brands_name: uniqueIncomingVendors },
     });
     return result;
   }
