@@ -178,6 +178,21 @@ model ProductVendor {
   @@map("product-vendor")
 }
 
+model TimeZone {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  timezone   String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model AppSetting {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  timezone  String   @default("Europe/Warsaw")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // model RecentActivity {
 //   id String @id @default(auto()) @map("_id") @db.ObjectId
 

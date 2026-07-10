@@ -6,6 +6,7 @@ import { DocumentRouters } from "../modules/document/document.route";
 import { FileSaveRouters } from "../modules/fileSave/fileSave.route";
 import { FeatureRoute } from "../modules/feature/feature.route";
 import { CsvRoutes } from "../modules/csv/csv.route";
+import { TimeZoneRoutes } from "../modules/timeZone/timeZone.route";
 
 const router = express.Router();
 
@@ -37,6 +38,10 @@ const moduleRoutes = [
   {
     path: "/csv",
     route: CsvRoutes
+  },
+  {
+    path: '/time-zone',
+    route: TimeZoneRoutes
   }
 ];
 
