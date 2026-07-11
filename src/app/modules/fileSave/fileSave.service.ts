@@ -510,11 +510,15 @@ const getAllSavedFiles = async (
     where: whereCondition,
   });
 
+  // Fetch app-level timezone set by admin
+  const appSetting = await prisma.appSetting.findFirst();
+  const appTimezone = appSetting?.timezone ?? "UTC";
+
   const finalResult = result.map((item) => {
     return {
       ...item,
       // fileUrl: S3Uploader.getPresignedUrl(item.fileUrl),
-      savedAt: formatDateAndTime(item.createdAt),
+      savedAt: formatDateAndTime(item.createdAt, appTimezone),
     };
   });
 

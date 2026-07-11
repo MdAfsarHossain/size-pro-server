@@ -20,7 +20,7 @@ export function formatDate(isoString: any) {
   return `${datePart}`;
 }
 
-export function formatDateAndTime(isoString: any) {
+export function formatDateAndTimeV1(isoString: any) {
   const date = new Date(isoString);
 
   // Format date part
@@ -40,6 +40,31 @@ export function formatDateAndTime(isoString: any) {
   return `${timePart}, ${datePart}`;
   // return `${datePart} & ${timePart}`;
   // return `${datePart}`;
+}
+
+export function formatDateAndTime(isoString: any, timezone?: string) {
+  const date = new Date(isoString);
+
+  const options: Intl.DateTimeFormatOptions = {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    ...(timezone ? { timeZone: timezone } : {}),
+  };
+
+  const formatted = date.toLocaleString("en-US", options);
+
+  // Rearrange to "time, date" format: e.g. "12:23 AM, Jul 12, 2026"
+  // toLocaleString returns e.g. "Jul 12, 2026, 12:23 AM" — split on last comma before AM/PM
+  const match = formatted.match(/^(.+),\s*(\d{1,2}:\d{2}\s*[AP]M)$/);
+  if (match) {
+    return `${match[2]}, ${match[1]}`;
+  }
+
+  return formatted;
 }
 
 export const formatDateForSubscription = (isoDateString: string): string => {
