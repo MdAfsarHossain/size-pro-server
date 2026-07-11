@@ -21,6 +21,8 @@ const createFeature = async (payload: any) => {
       conditionPolish: payload.conditionPolish || [],
       featureEnglish: payload.featureEnglish || [],
       featurePolish: payload.featurePolish || [],
+      tagEnglish: payload.tagEnglish || [],
+      tagPolish: payload.tagPolish || [],
       isPublished: payload.isPublished || false,
       status: payload.status || "active",
       customFields: payload.customFields || {},

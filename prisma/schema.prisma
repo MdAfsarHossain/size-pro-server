@@ -158,6 +158,8 @@ model Feature {
   conditionPolish  String[]
   featureEnglish   String[]
   featurePolish    String[]
+  tagEnglish       String[]
+  tagPolish        String[]
   isPublished      Boolean  @default(false)
   status           String
   customFields     Json
