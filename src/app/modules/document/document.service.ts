@@ -34,8 +34,8 @@ const createDocument = async (
   const language = documentData.language;
   const features = documentData.features;
   const gender = documentData.gender;
-  const type = documentData.type;
-
+  const type = documentData.type;  
+  
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
