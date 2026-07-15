@@ -35,6 +35,7 @@ const createDocument = async (
   const features = documentData.features;
   const gender = documentData.gender;
   const type = documentData.type;  
+  console.log(documentData);
   
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -57,8 +58,8 @@ const createDocument = async (
   formData.append("seller_id", userId);
   formData.append("seller_name", fullName);
   formData.append("language", language);
-  formData.append("gender", gender);
-  formData.append('type', type)
+  formData.append("gender", JSON.stringify(gender));
+  formData.append('type', JSON.stringify(type))
   files.images.forEach((file: any) => {
     products++;
     const fileBuffer = fs.readFileSync(file.path);
