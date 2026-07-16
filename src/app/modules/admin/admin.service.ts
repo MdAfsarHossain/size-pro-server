@@ -373,6 +373,9 @@ const getSingleAdmin = async (
 
   if (!result) return null;
 
+  const appSetting = await prisma.appSetting.findFirst();
+  const appTimezone = appSetting?.timezone ?? "UTC";
+
   let finalResult = result.generatedImages.map((document) => {
     // Parse imageDetails if it's a string, or use as is if it's already an object
     const imageDetails =
@@ -403,7 +406,7 @@ const getSingleAdmin = async (
       isModel: imageDetails?.model_urls?.length > 0 || false,
       isImageDiagram: imageDetails?.image_diagram_url?.length > 0 || false,
       isDeleted: document.isDeleted,
-      dateFormat: formatDateAndTime(document.createdAt),
+      dateFormat: formatDateAndTime(document.createdAt, appTimezone),
     };
   });
 
@@ -968,6 +971,10 @@ const getRecentActivity = async (query: any) => {
     });
   }
 
+  // Fetch app-level timezone set by admin
+  const appSetting = await prisma.appSetting.findFirst();
+  const appTimezone = appSetting?.timezone ?? "UTC";
+
   // Process the final documents (either paginated from search or regular)
   let finalResult = documents.map((document: any) => {
     try {
@@ -1023,7 +1030,7 @@ const getRecentActivity = async (query: any) => {
         isModel,
         isImageDiagram,
         isDeleted: document.isDeleted,
-        dateFormat: formatDateAndTime(document.createdAt),
+        dateFormat: formatDateAndTime(document.createdAt, appTimezone),
       };
     } catch (error) {
       console.error(
