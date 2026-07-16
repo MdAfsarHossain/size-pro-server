@@ -385,6 +385,10 @@ const myAllDocuments = async (userId: string, query: any) => {
     });
   }
 
+  // Fetch app-level timezone set by admin
+  const appSetting = await prisma.appSetting.findFirst();
+  const appTimezone = appSetting?.timezone ?? "UTC";
+
   const finalResult = documents.map((document) => {
     //#
     const sellerName = `${document.user.firstName} ${document.user.lastName}`;
@@ -422,7 +426,7 @@ const myAllDocuments = async (userId: string, query: any) => {
       isModel: imageDetails?.model_urls?.length > 0 || false,
       isImageDiagram: imageDetails?.image_diagram_url?.length > 0 || false,
       isDeleted: document.isDeleted,
-      dateFormat: formatDateAndTime(document.createdAt),
+      dateFormat: formatDateAndTime(document.createdAt, appTimezone),
     };
   });
 
