@@ -37,4 +37,8 @@ export default {
     privateKey: process.env.GOOGLE_DRIVE_PRIVATE_KEY,
     folderId: process.env.GOOGLE_DRIVE_FOLDER_ID,
   },
+  shopify: {
+    storeUrl: process.env.SHOPIFY_STORE_URL,
+    adminApiToken: process.env.SHOPIFY_ADMIN_API_TOKEN,
+  },
 };

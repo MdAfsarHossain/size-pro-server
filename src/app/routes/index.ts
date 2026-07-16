@@ -8,6 +8,7 @@ import { FeatureRoute } from "../modules/feature/feature.route";
 import { CsvRoutes } from "../modules/csv/csv.route";
 import { TimeZoneRoutes } from "../modules/timeZone/timeZone.route";
 import { ModelPositionRoutes } from "../modules/modelPosition/modelPosition.route";
+import { ShopifyRoutes } from "../modules/shopify/shopify.route";
 
 const router = express.Router();
 
@@ -47,6 +48,10 @@ const moduleRoutes = [
   {
     path: '/model-position',
     route: ModelPositionRoutes
+  },
+  {
+    path: '/shopify',
+    route: ShopifyRoutes
   }
 ];
 
