@@ -7,6 +7,7 @@ import { FileSaveRouters } from "../modules/fileSave/fileSave.route";
 import { FeatureRoute } from "../modules/feature/feature.route";
 import { CsvRoutes } from "../modules/csv/csv.route";
 import { TimeZoneRoutes } from "../modules/timeZone/timeZone.route";
+import { ModelPositionRoutes } from "../modules/modelPosition/modelPosition.route";
 
 const router = express.Router();
 
@@ -42,6 +43,10 @@ const moduleRoutes = [
   {
     path: '/time-zone',
     route: TimeZoneRoutes
+  },
+  {
+    path: '/model-position',
+    route: ModelPositionRoutes
   }
 ];
 
