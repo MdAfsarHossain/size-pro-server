@@ -182,15 +182,21 @@ const buildProductPayload = (groupRows: ShopifyCsvRow[]) => {
 };
 
 // Matches any "... (product.metafields.<namespace>.<key>)" column header and
-// turns it into a Shopify metafield. Columns under the "shopify" namespace
-// (e.g. Color -> shopify.color-pattern) are Shopify's own standard metafields
-// backed by metaobject references / taxonomy IDs that must already exist in
-// the store — resolving those isn't in scope here, so they're skipped rather
-// than sent with a guessed, likely-invalid value.
+// turns it into a Shopify metafield candidate. Columns under the "shopify"
+// namespace (e.g. Color -> shopify.color-pattern) are Shopify's own standard
+// metafields backed by metaobject references / taxonomy IDs that must already
+// exist in the store — resolving those isn't in scope here, so they're
+// skipped rather than sent with a guessed, likely-invalid value.
 const METAFIELD_COLUMN_REGEX = /\(product\.metafields\.([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]+)\)$/;
 
-const extractMetafields = (mainRow: ShopifyCsvRow): IShopifyMetafield[] => {
-  const metafields: IShopifyMetafield[] = [];
+interface IMetafieldCandidate {
+  namespace: string;
+  key: string;
+  rawValue: string;
+}
+
+const extractMetafieldCandidates = (mainRow: ShopifyCsvRow): IMetafieldCandidate[] => {
+  const candidates: IMetafieldCandidate[] = [];
 
   Object.entries(mainRow).forEach(([column, value]) => {
     if (!value) return;
@@ -201,42 +207,107 @@ const extractMetafields = (mainRow: ShopifyCsvRow): IShopifyMetafield[] => {
     const [, namespace, key] = match;
     if (namespace === "shopify") return;
 
-    const isList = value.includes(";");
-
-    metafields.push({
-      namespace,
-      key,
-      value: isList
-        ? JSON.stringify(
-            value
-              .split(";")
-              .map((v) => v.trim())
-              .filter(Boolean),
-          )
-        : value,
-      type: isList ? "list.single_line_text_field" : "single_line_text_field",
-    });
+    candidates.push({ namespace, key, rawValue: value });
   });
 
   if (mainRow["SEO title"]) {
-    metafields.push({
-      namespace: "global",
-      key: "title_tag",
-      value: mainRow["SEO title"],
-      type: "single_line_text_field",
-    });
+    candidates.push({ namespace: "global", key: "title_tag", rawValue: mainRow["SEO title"] });
   }
 
   if (mainRow["SEO description"]) {
-    metafields.push({
+    candidates.push({
       namespace: "global",
       key: "description_tag",
-      value: mainRow["SEO description"],
-      type: "single_line_text_field",
+      rawValue: mainRow["SEO description"],
     });
   }
 
-  return metafields;
+  return candidates;
+};
+
+// The store may already have metafield *definitions* for these namespace/key
+// pairs (created earlier by hand or by a prior CSV import), and Shopify
+// rejects a metafield whose "type" doesn't match its definition's type
+// (e.g. it requires "list.single_line_text_field" but we sent a plain
+// string). Fetching the real definitions up front — instead of guessing the
+// type from whether the CSV value contains a ";" — avoids that mismatch.
+// Metafield definitions are only exposed via GraphQL, not the REST Admin API
+// (confirmed: /metafield_definitions.json 404s), so this is the one call in
+// the module that goes through /graphql.json instead of a REST resource.
+const METAFIELD_DEFINITIONS_QUERY = `
+  query MetafieldDefinitions($namespace: String) {
+    metafieldDefinitions(ownerType: PRODUCT, namespace: $namespace, first: 100) {
+      nodes {
+        key
+        type {
+          name
+        }
+      }
+    }
+  }
+`;
+
+const fetchMetafieldDefinitionTypes = async (
+  client: AxiosInstance,
+  namespaces: string[],
+): Promise<Map<string, string>> => {
+  const typeByNamespaceKey = new Map<string, string>();
+
+  await Promise.all(
+    namespaces.map(async (namespace) => {
+      try {
+        const { data } = await client.post("/graphql.json", {
+          query: METAFIELD_DEFINITIONS_QUERY,
+          variables: { namespace },
+        });
+
+        const nodes = data?.data?.metafieldDefinitions?.nodes || [];
+        nodes.forEach((node: any) => {
+          typeByNamespaceKey.set(`${namespace}.${node.key}`, node.type.name);
+        });
+      } catch (error: any) {
+        console.error(
+          `Failed to fetch metafield definitions for namespace "${namespace}":`,
+          error?.response?.data || error.message,
+        );
+      }
+    }),
+  );
+
+  return typeByNamespaceKey;
+};
+
+const finalizeMetafield = (
+  candidate: IMetafieldCandidate,
+  definitionTypes: Map<string, string>,
+): IShopifyMetafield => {
+  const definedType = definitionTypes.get(`${candidate.namespace}.${candidate.key}`);
+  const isList = definedType ? definedType.startsWith("list.") : candidate.rawValue.includes(";");
+  const type = definedType || (isList ? "list.single_line_text_field" : "single_line_text_field");
+
+  const value = isList
+    ? JSON.stringify(
+        candidate.rawValue
+          .split(";")
+          .map((v) => v.trim())
+          .filter(Boolean),
+      )
+    : candidate.rawValue;
+
+  return { namespace: candidate.namespace, key: candidate.key, value, type };
+};
+
+const buildMetafields = async (
+  client: AxiosInstance,
+  mainRow: ShopifyCsvRow,
+): Promise<IShopifyMetafield[]> => {
+  const candidates = extractMetafieldCandidates(mainRow);
+  if (!candidates.length) return [];
+
+  const namespaces = Array.from(new Set(candidates.map((c) => c.namespace)));
+  const definitionTypes = await fetchMetafieldDefinitionTypes(client, namespaces);
+
+  return candidates.map((candidate) => finalizeMetafield(candidate, definitionTypes));
 };
 
 const getShopifyClient = (): AxiosInstance => {
@@ -338,7 +409,7 @@ const createProductsFromCsv = async (
       const { data } = await client.post("/products.json", { product: payload });
       const createdProduct = data.product;
 
-      const metafields = extractMetafields(mainRow);
+      const metafields = await buildMetafields(client, mainRow);
       const metafieldResults = metafields.length
         ? await createProductMetafields(client, createdProduct.id, metafields)
         : [];
