@@ -57,6 +57,12 @@ const documentImages = upload.fields([
   { name: "images", maxCount: 100 },
   { name: "backpart_images", maxCount: 100 },
 ]);
+// Memory storage (not `upload`/disk storage) — downstream code needs
+// file.buffer to parse CSV content directly, not a path on disk.
+const testMultipleFiles = multer({ storage: multer.memoryStorage() }).array(
+  "files",
+  100,
+);
 // const driveImage = upload.single("driveImage");
 
 const memoryStorage = multer.memoryStorage();
@@ -86,5 +92,6 @@ export const fileUploader = {
   documentImages,
   driveImage,
   csvFile,
-  testFile
+  testFile,
+  testMultipleFiles
 };

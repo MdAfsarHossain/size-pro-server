@@ -441,6 +441,23 @@ const createProductsFromCsv = async (
   return results;
 };
 
+// Processed one file at a time (not Promise.all) so this doesn't multiply
+// Shopify's per-shop rate limit beyond what a single file's product loop in
+// createProductsFromCsv already causes.
+const uploadMultipleProductsCsv = async (
+  files: Express.Multer.File[],
+): Promise<IProductResult[]> => {
+  const results: IProductResult[] = [];
+
+  for (const file of files) {
+    const fileResults = await createProductsFromCsv(file);
+    results.push(...fileResults);
+  }
+
+  return results;
+};
+
 export const ShopifyService = {
   createProductsFromCsv,
+  uploadMultipleProductsCsv
 };

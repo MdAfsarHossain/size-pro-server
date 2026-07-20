@@ -9,9 +9,16 @@ const router = Router();
 // uses, since we need the raw buffer to parse the CSV text in-process.
 router.post(
   "/upload-csv",
-  auth(),
+  // auth(),
   fileUploader.testFile,
   ShopifyController.uploadProductsCsv,
+);
+
+router.post(
+  "/upload-multiple-csv",
+  // auth(),
+  fileUploader.testMultipleFiles,
+  ShopifyController.uploadMultipleProductsCsv,
 );
 
 export const ShopifyRoutes = router;
