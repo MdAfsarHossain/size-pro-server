@@ -366,13 +366,6 @@ const myAllDocuments = async (userId: string, query: any) => {
         imageDetails: true, // Keep as true since it's JSON
         isDeleted: true,
         createdAt: true,
-        //#
-        user: {
-          select: {
-            firstName: true,
-            lastName: true,
-          },
-        },
       },
       // orderBy: sortOption,
       orderBy: { createdAt: "desc" },
@@ -389,11 +382,17 @@ const myAllDocuments = async (userId: string, query: any) => {
   const appSetting = await prisma.appSetting.findFirst();
   const appTimezone = appSetting?.timezone ?? "UTC";
 
-  const finalResult = documents.map((document) => {
-    //#
-    const sellerName = `${document.user.firstName} ${document.user.lastName}`;
+  // Every document here belongs to the same `userId`, so the seller is
+  // fetched once rather than expected per-document (the raw-Mongo search
+  // branch above doesn't embed a `user` object at all).
+  const seller = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { firstName: true, lastName: true },
+  });
+  const sellerName = seller ? `${seller.firstName} ${seller.lastName}` : "";
 
-    
+  const finalResult = documents.map((document) => {
+
     // Parse imageDetails if it's a string, or use as is if it's already an object
     const imageDetails =
       typeof document.imageDetails === "string"
