@@ -341,6 +341,7 @@ const myAllDocuments = async (userId: string, query: any) => {
       createdAt: doc.createdAt?.$date
         ? new Date(doc.createdAt.$date)
         : new Date(),
+        isShopifyUploaded: doc.isShopifyUploaded,
     }));
 
     const countDocs: any = await prisma.generatedImage.aggregateRaw({
@@ -366,6 +367,7 @@ const myAllDocuments = async (userId: string, query: any) => {
         imageDetails: true, // Keep as true since it's JSON
         isDeleted: true,
         createdAt: true,
+        isShopifyUploaded: true,
       },
       // orderBy: sortOption,
       orderBy: { createdAt: "desc" },
@@ -426,6 +428,7 @@ const myAllDocuments = async (userId: string, query: any) => {
       isImageDiagram: imageDetails?.image_diagram_url?.length > 0 || false,
       isDeleted: document.isDeleted,
       dateFormat: formatDateAndTime(document.createdAt, appTimezone),
+      isShopifyUploaded: document.isShopifyUploaded,      
     };
   });
 
