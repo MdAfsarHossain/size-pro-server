@@ -89,6 +89,7 @@ model Document {
   // AI Generated
   aiGenerated Json
   isDeleted   Boolean @default(false)
+  isShopifyUploaded Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -120,6 +121,7 @@ model GeneratedImage {
 
   imageDetails Json
   isDeleted    Boolean @default(false)
+  isShopifyUploaded Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

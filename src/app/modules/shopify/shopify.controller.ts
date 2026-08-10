@@ -38,7 +38,20 @@ const uploadMultipleProductsCsv = catchAsync(async (req: Request, res: Response)
   });
 });
 
+const successfullyShopifyUpload = catchAsync(async (req: Request, res: Response) => {
+
+  const result = await ShopifyService.successfullyShopifyUpload(req.params.id);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Shopify Uploaded successfully.",
+    data: result,
+  });
+});
+
 export const ShopifyController = {
   uploadProductsCsv,
-  uploadMultipleProductsCsv
+  uploadMultipleProductsCsv,
+  successfullyShopifyUpload
 };

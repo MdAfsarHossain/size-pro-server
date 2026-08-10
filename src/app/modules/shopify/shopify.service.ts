@@ -2,6 +2,7 @@ import axios, { AxiosInstance } from "axios";
 import httpStatus from "http-status";
 import config from "../../../config";
 import ApiError from "../../errors/ApiError";
+import prisma from "../../lib/prisma";
 
 const SHOPIFY_API_VERSION = "2024-10";
 
@@ -887,7 +888,31 @@ const uploadMultipleProductsCsv = async (
   return results;
 };
 
+const successfullyShopifyUpload = async (id: string) => {
+  const isGeneratedImageExist = await prisma.generatedImage.findUnique({
+    where: {
+      id
+    }
+  })
+
+  if(!isGeneratedImageExist) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Generated Image not found")
+  };
+
+  const result = await prisma.generatedImage.update({
+    where: {
+      id
+    }, 
+    data: {
+      isShopifyUploaded: true
+    }
+  })
+
+  return result
+}
+
 export const ShopifyService = {
   createProductsFromCsv,
   uploadMultipleProductsCsv,
+  successfullyShopifyUpload
 };
