@@ -40,7 +40,7 @@ const uploadMultipleProductsCsv = catchAsync(async (req: Request, res: Response)
 
 const successfullyShopifyUpload = catchAsync(async (req: Request, res: Response) => {
 
-  const result = await ShopifyService.successfullyShopifyUpload(req.params.id);
+  const result = await ShopifyService.successfullyShopifyUpload(req.body);
 
   sendResponse(res, {
     success: true,

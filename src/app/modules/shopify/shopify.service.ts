@@ -888,7 +888,8 @@ const uploadMultipleProductsCsv = async (
   return results;
 };
 
-const successfullyShopifyUpload = async (id: string) => {
+const successfullyShopifyUpload = async (payload: any) => {
+  const { id } = payload;
   const isGeneratedImageExist = await prisma.generatedImage.findUnique({
     where: {
       id
@@ -907,6 +908,22 @@ const successfullyShopifyUpload = async (id: string) => {
       isShopifyUploaded: true
     }
   })
+
+  //     (async () => {
+  //     try {
+  //       const result = await prisma.generatedImage.update({
+  //   where: {
+  //     id
+  //   }, 
+  //   data: {
+  //     isShopifyUploaded: true
+  //   }
+  // })
+  //       console.log("Blog creation successful:", result);
+  //     } catch (error: any) {
+  //       console.error("Blog creation failed:", error);
+  //     }
+  //   })();
 
   return result
 }

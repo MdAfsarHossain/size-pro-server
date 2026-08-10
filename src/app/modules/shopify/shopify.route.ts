@@ -21,6 +21,6 @@ router.post(
   ShopifyController.uploadMultipleProductsCsv,
 );
 
-router.post('/:id', ShopifyController.successfullyShopifyUpload)
+router.post('/success', ShopifyController.successfullyShopifyUpload)
 
 export const ShopifyRoutes = router;
