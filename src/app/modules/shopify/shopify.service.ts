@@ -27,7 +27,7 @@ interface IProductResult {
   success: boolean;
   shopifyProductId?: number;
   adminUrl?: string;
-  metafieldResults?: (IShopifyMetafield & { success: true })[];
+  metafieldResults?: (IShopifyMetafield & { success: boolean })[];
   droppedMetafields?: { metafield: IShopifyMetafield; reason: string }[];
   skippedMetafields?: ISkippedMetafield[];
   publish?: { success: boolean; message?: string };
@@ -163,9 +163,16 @@ const getPrimaryLocationGid = async (client: AxiosInstance): Promise<string | un
 // Product options must be pre-declared with every value any variant will use
 // (productSet's variants reference them by name via optionValues), so this
 // collects the distinct set of values per option across all variant rows,
-// not just the main row.
+// not just the main row. productSet requires productOptions whenever variants
+// are present at all — strictly enforced when the handle matches an existing
+// product (an update), which failed live with "Product options input is
+// required when updating variants" for CSVs whose Option1 name/value came out
+// blank. Falls back to Shopify's own default single-variant option (matching
+// what a plain product with no custom options looks like natively) so
+// productOptions is never empty — buildProductSetVariant's optionValues must
+// stay in sync with this fallback, see hasRealOptions below.
 const buildProductOptions = (mainRow: ShopifyCsvRow, variantRows: ShopifyCsvRow[]) => {
-  return [1, 2, 3]
+  const options = [1, 2, 3]
     .map((n) => {
       const name = mainRow[`Option${n} name`];
       if (!name) return null;
@@ -177,20 +184,25 @@ const buildProductOptions = (mainRow: ShopifyCsvRow, variantRows: ShopifyCsvRow[
       return values.length ? { name, values: values.map((v) => ({ name: v })) } : null;
     })
     .filter(Boolean);
+
+  return options.length ? options : [{ name: "Title", values: [{ name: "Default Title" }] }];
 };
 
 const buildProductSetVariant = (
   row: ShopifyCsvRow,
   mainRow: ShopifyCsvRow,
   locationGid: string | undefined,
+  hasRealOptions: boolean,
 ) => {
-  const optionValues = [1, 2, 3]
-    .map((n) => {
-      const optionName = mainRow[`Option${n} name`];
-      const value = row[`Option${n} value`];
-      return optionName && value ? { optionName, name: value } : null;
-    })
-    .filter(Boolean);
+  const optionValues = hasRealOptions
+    ? [1, 2, 3]
+        .map((n) => {
+          const optionName = mainRow[`Option${n} name`];
+          const value = row[`Option${n} value`];
+          return optionName && value ? { optionName, name: value } : null;
+        })
+        .filter(Boolean)
+    : [{ optionName: "Title", name: "Default Title" }];
 
   const weightValue = toNumber(row["Weight value (grams)"]);
   const weightUnit =
@@ -245,9 +257,10 @@ const buildProductSetInput = (
   const effectiveVariantRows = variantRows.length ? variantRows : [mainRow];
   const imageRows = groupRows.filter(isImageRow);
 
+  const hasRealOptions = [1, 2, 3].some((n) => mainRow[`Option${n} name`]);
   const productOptions = buildProductOptions(mainRow, effectiveVariantRows);
   const variants = effectiveVariantRows.map((row) =>
-    buildProductSetVariant(row, mainRow, locationGid),
+    buildProductSetVariant(row, mainRow, locationGid, hasRealOptions),
   );
 
   const files = imageRows
@@ -789,8 +802,62 @@ const resolveTaxonomyCategoryId = async (
   }
 };
 
+// Persists a full audit trail of every upload attempt (success or failure) so
+// a failure can be diagnosed later without re-running anything — see
+// IProductResult for exactly what's captured (which metafields succeeded,
+// which were dropped/skipped and why, publish status). Never lets a
+// persistence problem break the actual Shopify upload response, same
+// resilience pattern used everywhere else in this module.
+const recordShopifyUploadHistory = async (
+  result: IProductResult,
+  generatedImageId?: string,
+): Promise<void> => {
+  try {
+    let userId: string | undefined;
+
+    if (generatedImageId) {
+      const generatedImage = await prisma.generatedImage.findUnique({
+        where: { id: generatedImageId },
+        select: { userId: true },
+      });
+      userId = generatedImage?.userId;
+    }
+
+    const errorMessage = result.error
+      ? typeof result.error === "string"
+        ? result.error
+        : JSON.stringify(result.error)
+      : undefined;
+
+    await prisma.shopifyUploadHistory.create({
+      data: {
+        userId,
+        generatedImageId,
+        handle: result.handle,
+        title: result.title,
+        success: result.success,
+        shopifyProductId: result.shopifyProductId ? String(result.shopifyProductId) : undefined,
+        adminUrl: result.adminUrl,
+        errorMessage,
+        result: result as any,
+      },
+    });
+
+    if (result.success && generatedImageId) {
+      // await prisma.generatedImage.update({
+      //   where: { id: generatedImageId },
+      //   data: { isShopifyUploaded: true },
+      // });
+      await updateGeneratedImageByShopifyUpload(generatedImageId)
+    }
+  } catch (error: any) {
+    console.error("Failed to record Shopify upload history:", error?.message || error);
+  }
+};
+
 const createProductsFromCsv = async (
   file?: Express.Multer.File,
+  generatedImageId?: string,
 ): Promise<IProductResult[]> => {
   if (!file) {
     throw new ApiError(httpStatus.BAD_REQUEST, "CSV file is required");
@@ -822,10 +889,20 @@ const createProductsFromCsv = async (
 
   for (const groupRows of productGroups) {
     const mainRow = groupRows[0];
+    // Captured outside the try block so the catch branch can still report
+    // which metafields were attempted (and any pre-resolved skips) even when
+    // the productSet call itself fails for an unrelated reason (e.g. a
+    // duplicate handle) — productSet is atomic, so none of these were
+    // actually applied, but seeing what was *attempted* is what makes a
+    // failure diagnosable later from the history record alone.
+    let attemptedMetafields: IShopifyMetafield[] = [];
+    let attemptedSkipped: ISkippedMetafield[] = [];
 
     try {
       const input = buildProductSetInput(groupRows, locationGid);
       const { metafields, skipped } = await buildMetafields(client, mainRow);
+      attemptedMetafields = metafields;
+      attemptedSkipped = skipped;
       input.metafields = metafields;
 
       const categoryText = mainRow["Product category"] || mainRow["Type"];
@@ -848,7 +925,7 @@ const createProductsFromCsv = async (
         publish = await publishToOnlineStore(client, product.id);
       }
 
-      results.push({
+      const productResult: IProductResult = {
         handle: mainRow["URL handle"],
         title: mainRow["Title"],
         success: true,
@@ -858,14 +935,23 @@ const createProductsFromCsv = async (
         droppedMetafields: droppedMetafields.length ? droppedMetafields : undefined,
         skippedMetafields: skipped.length ? skipped : undefined,
         publish,
-      });
+      };
+      results.push(productResult);
+      await recordShopifyUploadHistory(productResult, generatedImageId);
+      // await succ
     } catch (error: any) {
-      results.push({
+      const productResult: IProductResult = {
         handle: mainRow["URL handle"],
         title: mainRow["Title"],
         success: false,
         error: error?.response?.data || error.message,
-      });
+        metafieldResults: attemptedMetafields.length
+          ? attemptedMetafields.map((m) => ({ ...m, success: false as const }))
+          : undefined,
+        skippedMetafields: attemptedSkipped.length ? attemptedSkipped : undefined,
+      };
+      results.push(productResult);
+      await recordShopifyUploadHistory(productResult, generatedImageId);
     }
   }
 
@@ -877,19 +963,72 @@ const createProductsFromCsv = async (
 // createProductsFromCsv already causes.
 const uploadMultipleProductsCsv = async (
   files: Express.Multer.File[],
+  generatedImageIds?: (string | undefined)[],
 ): Promise<IProductResult[]> => {
   const results: IProductResult[] = [];
 
-  for (const file of files) {
-    const fileResults = await createProductsFromCsv(file);
+  for (let i = 0; i < files.length; i++) {
+    const fileResults = await createProductsFromCsv(files[i], generatedImageIds?.[i]);
     results.push(...fileResults);
   }
 
   return results;
 };
 
-const successfullyShopifyUpload = async (payload: any) => {
-  const { id } = payload;
+interface IUploadHistoryQuery {
+  page?: number;
+  limit?: number;
+  success?: boolean;
+  generatedImageId?: string;
+}
+
+// Superseded by recordShopifyUploadHistory, which is called automatically at
+// upload time now (see createProductsFromCsv) — isShopifyUploaded gets set
+// as part of that, so the frontend no longer needs a separate confirmation
+// call after the fact.
+const getShopifyUploadHistory = async (query: IUploadHistoryQuery) => {
+  const page = query.page || 1;
+  const limit = query.limit || 10;
+  const skip = (page - 1) * limit;
+
+  const whereCondition: Record<string, any> = {};
+  if (query.success !== undefined) whereCondition.success = query.success;
+  if (query.generatedImageId) whereCondition.generatedImageId = query.generatedImageId;
+
+  const data = await prisma.shopifyUploadHistory.findMany({
+    where: whereCondition,
+    orderBy: { createdAt: "desc" },
+    skip,
+    take: limit,
+  });
+
+  const total = await prisma.shopifyUploadHistory.count({ where: whereCondition });
+
+  return {
+    data,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPage: Math.ceil(total / limit),
+      hasNextPage: page < Math.ceil(total / limit),
+      hasPrevPage: page > 1,
+    },
+  };
+};
+
+const getShopifyUploadHistoryById = async (id: string) => {
+  const record = await prisma.shopifyUploadHistory.findUnique({ where: { id } });
+
+  if (!record) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Shopify upload history record not found");
+  }
+
+  return record;
+};
+
+
+const updateGeneratedImageByShopifyUpload = async (id: string) => {
   const isGeneratedImageExist = await prisma.generatedImage.findUnique({
     where: {
       id
@@ -931,5 +1070,6 @@ const successfullyShopifyUpload = async (payload: any) => {
 export const ShopifyService = {
   createProductsFromCsv,
   uploadMultipleProductsCsv,
-  successfullyShopifyUpload
+  getShopifyUploadHistory,
+  getShopifyUploadHistoryById,
 };
