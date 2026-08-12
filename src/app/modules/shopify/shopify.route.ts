@@ -29,5 +29,6 @@ router.post(
 
 router.get("/upload-history", ShopifyController.getShopifyUploadHistory);
 router.get("/upload-history/:id", ShopifyController.getShopifyUploadHistoryById);
+router.get("/upload-history/document/:documentId", ShopifyController.getShopifyUploadHistoryByDocumentId);
 
 export const ShopifyRoutes = router;

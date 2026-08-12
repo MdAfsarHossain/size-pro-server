@@ -25,21 +25,27 @@ const uploadProductsCsv = catchAsync(async (req: Request, res: Response) => {
 const uploadMultipleProductsCsv = catchAsync(async (req: Request, res: Response) => {
   const files = req.files as Express.Multer.File[] | undefined;
   // console.log(files);
-  // console.log(req.body);
   
 
   if (!files || !files.length) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Please upload at least one CSV file!");
   }
 
-  let generatedImageIds: (string | undefined)[] | undefined;
+  // let generatedImageIds: (string | undefined)[] | undefined;
+  const generatedImageIds: string[] = req.body.generatedImageIds;
+  // console.log("===>>",generatedImageIds);
+  
 
-  const getIds = req.body?.generatedImageIds;
-  if (getIds) {
-    generatedImageIds = Array.isArray(getIds)
-      ? (getIds as string[])
-      : [getIds as string];
-  }
+  // const getIds = req.body?.generatedImageIds;
+  // if (getIds) {
+  //   generatedImageIds = Array.isArray(getIds)
+  //     ? (getIds as string[])
+  //     : [getIds as string];
+  // }
+  // console.log(getIds);
+  // console.log(generatedImageIds);
+  
+  
   // return generatedImageIds;
 
   // if (req.body.generatedImageIds) {
@@ -94,9 +100,22 @@ const getShopifyUploadHistoryById = catchAsync(async (req: Request, res: Respons
   });
 });
 
+const getShopifyUploadHistoryByDocumentId = catchAsync(async (req: Request, res: Response) => {
+  const { documentId } = req.params;
+  const result = await ShopifyService.getShopifyUploadHistoryByDocumentId(documentId);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Shopify upload history record retrieved successfully",
+    data: result,
+  });
+});
+
 export const ShopifyController = {
   uploadProductsCsv,
   uploadMultipleProductsCsv,
   getShopifyUploadHistory,
   getShopifyUploadHistoryById,
+  getShopifyUploadHistoryByDocumentId,
 };

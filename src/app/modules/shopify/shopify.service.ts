@@ -811,18 +811,34 @@ const resolveTaxonomyCategoryId = async (
 // resilience pattern used everywhere else in this module.
 const recordShopifyUploadHistory = async (
   result: IProductResult,
-  generatedImageId?: string,
+  documentId: string,
 ): Promise<void> => {
   try {
-    let userId: string | undefined;
+    // let userId: string;
 
-    if (generatedImageId) {
-      const generatedImage = await prisma.generatedImage.findUnique({
-        where: { id: generatedImageId },
-        select: { userId: true },
-      });
-      userId = generatedImage?.userId;
+    // if (generatedImageId) {
+    //   const generatedImage = await prisma.generatedImage.findUnique({
+    //     where: { id: generatedImageId },
+    //     select: { userId: true },
+    //   });
+    //   userId = generatedImage?.userId;
+    // }
+    // console.log(documentId);
+    
+
+    const isGeneratedImageExist = await prisma.generatedImage.findUnique({
+      where: { id: documentId },
+      select: { userId: true },
+    });
+    // const userId = generatedImage?.userId;
+    if(!isGeneratedImageExist){
+      throw new ApiError(httpStatus.BAD_REQUEST, "Document not found");
     }
+    // console.log('Generated Image: =>>>>');
+    
+    // console.log(isGeneratedImageExist);
+    
+    const userId = isGeneratedImageExist.userId;
 
     const errorMessage = result.error
       ? typeof result.error === "string"
@@ -833,7 +849,7 @@ const recordShopifyUploadHistory = async (
     await prisma.shopifyUploadHistory.create({
       data: {
         userId,
-        generatedImageId,
+        generatedImageId: documentId,
         handle: result.handle,
         title: result.title,
         success: result.success,
@@ -844,12 +860,12 @@ const recordShopifyUploadHistory = async (
       },
     });
 
-    if (result.success && generatedImageId) {
+    if (result.success && documentId) {
       // await prisma.generatedImage.update({
       //   where: { id: generatedImageId },
       //   data: { isShopifyUploaded: true },
       // });
-      await updateGeneratedImageByShopifyUpload(generatedImageId)
+      await updateGeneratedImageByShopifyUpload(documentId)
     }
   } catch (error: any) {
     console.error("Failed to record Shopify upload history:", error?.message || error);
@@ -857,12 +873,22 @@ const recordShopifyUploadHistory = async (
 };
 
 const createProductsFromCsv = async (
-  file?: Express.Multer.File,
-  generatedImageId?: string,
+  file: Express.Multer.File,
+  generatedImageId: string,
 ): Promise<IProductResult[]> => {
   if (!file) {
     throw new ApiError(httpStatus.BAD_REQUEST, "CSV file is required");
   }
+  
+  // console.log(`CREATE PRODUCTS FROM CSV`);
+  
+  // console.log("===>>>",file);
+  // console.log("===================");
+  // console.log(generatedImageId);
+  
+  
+  // return [];
+
 
   const csvContent = file.buffer.toString("utf-8");
   const rows = parseCsv(csvContent);
@@ -964,12 +990,20 @@ const createProductsFromCsv = async (
 // createProductsFromCsv already causes.
 const uploadMultipleProductsCsv = async (
   files: Express.Multer.File[],
-  generatedImageIds?: (string | undefined)[],
+  generatedImageIds: string[],
 ): Promise<IProductResult[]> => {
   const results: IProductResult[] = [];
 
+  // console.log(`UPLOAD MULTIPLE PRODUCTS CSV`);
+  
   for (let i = 0; i < files.length; i++) {
-    const fileResults = await createProductsFromCsv(files[i], generatedImageIds?.[i]);
+    
+    // console.log(`===>>FILE===>>>`,files[i]);
+    // console.log(`===>>GENERATED IMAGE ID===>>>`,generatedImageIds[i]);
+    // console.log("==================");
+    const fileResults = await createProductsFromCsv(files[i], generatedImageIds[i]);
+    
+    
     results.push(...fileResults);
   }
 
@@ -1049,6 +1083,30 @@ const getShopifyUploadHistoryById = async (id: string) => {
   return finalRecord;
 };
 
+const getShopifyUploadHistoryByDocumentId = async (documentId: string) => {
+  const record = await prisma.shopifyUploadHistory.findFirst({
+    where: { 
+      generatedImageId: documentId 
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  // Fetch app-level timezone set by admin
+  const appSetting = await prisma.appSetting.findFirst();
+  const appTimezone = appSetting?.timezone ?? "UTC";
+
+  if (!record) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Shopify upload history record not found");
+  }
+
+  const finalRecord = {
+    ...record,
+    createdAt: formatDateAndTime(record.createdAt, appTimezone),
+  }
+
+  return finalRecord;
+};
+
 
 const updateGeneratedImageByShopifyUpload = async (id: string) => {
   const isGeneratedImageExist = await prisma.generatedImage.findUnique({
@@ -1094,4 +1152,5 @@ export const ShopifyService = {
   uploadMultipleProductsCsv,
   getShopifyUploadHistory,
   getShopifyUploadHistoryById,
+  getShopifyUploadHistoryByDocumentId,
 };
