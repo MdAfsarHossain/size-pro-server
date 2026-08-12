@@ -3,6 +3,7 @@ import httpStatus from "http-status";
 import config from "../../../config";
 import ApiError from "../../errors/ApiError";
 import prisma from "../../lib/prisma";
+import { formatDateAndTime } from "../../utils/formatDate";
 
 const SHOPIFY_API_VERSION = "2024-10";
 
@@ -1004,8 +1005,20 @@ const getShopifyUploadHistory = async (query: IUploadHistoryQuery) => {
 
   const total = await prisma.shopifyUploadHistory.count({ where: whereCondition });
 
+  // Fetch app-level timezone set by admin
+    const appSetting = await prisma.appSetting.findFirst();
+    const appTimezone = appSetting?.timezone ?? "UTC";
+
+  const finalData = data.map((item: any) => {
+    
+    return {
+      ...item,
+      createdAt: formatDateAndTime(item.createdAt, appTimezone),
+    }
+  })
+
   return {
-    data,
+    data: finalData,
     meta: {
       page,
       limit,
@@ -1020,11 +1033,20 @@ const getShopifyUploadHistory = async (query: IUploadHistoryQuery) => {
 const getShopifyUploadHistoryById = async (id: string) => {
   const record = await prisma.shopifyUploadHistory.findUnique({ where: { id } });
 
+  // Fetch app-level timezone set by admin
+  const appSetting = await prisma.appSetting.findFirst();
+  const appTimezone = appSetting?.timezone ?? "UTC";
+
   if (!record) {
     throw new ApiError(httpStatus.NOT_FOUND, "Shopify upload history record not found");
   }
 
-  return record;
+  const finalRecord = {
+    ...record,
+    createdAt: formatDateAndTime(record.createdAt, appTimezone),
+  }
+
+  return finalRecord;
 };
 
 
