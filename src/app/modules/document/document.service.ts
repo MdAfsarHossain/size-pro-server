@@ -110,21 +110,20 @@ const createDocument = async (
     },
   });
 
-  let generatedImageId: string[] = [];
-
-  const result = await Promise.all(
+  // Promise.all preserves the order of its input array in the returned
+  // array, regardless of which promise settles first — pushing ids from
+  // inside each concurrent callback instead (the previous approach) does
+  // not, since concurrent DB writes can complete in any order.
+  const generatedImageId: string[] = await Promise.all(
     response?.data?.product.images_batch.map(async (item: any) => {
-      // generatedImages++;
       const image = await prisma.generatedImage.create({
         data: {
           userId,
           imageDetails: item,
         },
       });
-      // console.log(image);
-      // console.log(image.id);
 
-      generatedImageId.push(image.id);
+      return image.id;
     }),
   );
 
