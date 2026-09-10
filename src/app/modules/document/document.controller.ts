@@ -150,6 +150,20 @@ const generateCSV = catchAsync(async (req: Request, res: Response) => {
   // return res.status(200).send(csvBuffer);
 });
 
+// Get Product
+const getProduct = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const result = await DocumentServices.getProduct(id);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Product retrieved successfully",
+    data: result,
+  });
+});
+
 export const DocumentControllers = {
   createDocument,
   myAllDocuments,
@@ -158,4 +172,5 @@ export const DocumentControllers = {
   deleteDocument,
   saveToDrive,
   generateCSV,
+  getProduct,
 };

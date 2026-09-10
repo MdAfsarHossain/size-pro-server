@@ -61,4 +61,11 @@ route.get(
   DocumentControllers.generateCSV,
 );
 
+// Get Product
+route.get(
+  "/product/:id",
+  auth(Role.ADMIN, Role.SUPERADMIN),
+  DocumentControllers.getProduct,
+);
+
 export const DocumentRouters = route;

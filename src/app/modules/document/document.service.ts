@@ -24,7 +24,6 @@ interface DocumentData {
   // imageDiagram?: string;
 }
 
-
 // Create Document
 const createDocument = async (
   userId: string,
@@ -34,9 +33,9 @@ const createDocument = async (
   const language = documentData.language;
   const features = documentData.features;
   const gender = documentData.gender;
-  const type = documentData.type;  
+  const type = documentData.type;
   console.log(documentData);
-  
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -59,7 +58,7 @@ const createDocument = async (
   formData.append("seller_name", fullName);
   formData.append("language", language);
   formData.append("gender", JSON.stringify(gender));
-  formData.append('type', JSON.stringify(type))
+  formData.append("type", JSON.stringify(type));
   files.images.forEach((file: any) => {
     products++;
     const fileBuffer = fs.readFileSync(file.path);
@@ -67,8 +66,8 @@ const createDocument = async (
     formData.append("images", blob, file.originalname);
   });
 
-  // Backparts Image 
-   files.backpart_images.forEach((file: any) => {
+  // Backparts Image
+  files.backpart_images.forEach((file: any) => {
     // products++;
     const fileBuffer = fs.readFileSync(file.path);
     const blob = new Blob([fileBuffer], { type: file.mimetype });
@@ -317,9 +316,7 @@ const myAllDocuments = async (userId: string, query: any) => {
     const rawMatch = {
       userId: { $oid: userId },
       isDeleted: false,
-      $or: [
-        { "imageDetails.product_title": searchRegex },
-      ],
+      $or: [{ "imageDetails.product_title": searchRegex }],
     };
 
     const rawDocs: any = await prisma.generatedImage.findRaw({
@@ -340,7 +337,7 @@ const myAllDocuments = async (userId: string, query: any) => {
       createdAt: doc.createdAt?.$date
         ? new Date(doc.createdAt.$date)
         : new Date(),
-        isShopifyUploaded: doc.isShopifyUploaded,
+      isShopifyUploaded: doc.isShopifyUploaded,
     }));
 
     const countDocs: any = await prisma.generatedImage.aggregateRaw({
@@ -393,7 +390,6 @@ const myAllDocuments = async (userId: string, query: any) => {
   const sellerName = seller ? `${seller.firstName} ${seller.lastName}` : "";
 
   const finalResult = documents.map((document) => {
-
     // Parse imageDetails if it's a string, or use as is if it's already an object
     const imageDetails =
       typeof document.imageDetails === "string"
@@ -427,7 +423,7 @@ const myAllDocuments = async (userId: string, query: any) => {
       isImageDiagram: imageDetails?.image_diagram_url?.length > 0 || false,
       isDeleted: document.isDeleted,
       dateFormat: formatDateAndTime(document.createdAt, appTimezone),
-      isShopifyUploaded: document.isShopifyUploaded,      
+      isShopifyUploaded: document.isShopifyUploaded,
     };
   });
 
@@ -1196,6 +1192,13 @@ const generateCSV = async (documentId: string) => {
 
 // authorize().then(uploadFile).catch("error", console.error); // function call
 
+const getProduct = async (productId: string) => {
+  const response = await axios.get(`${process.env.AI_API}/`, {
+    params: { product_id: productId },
+  });
+  return response.data;
+};
+
 export const DocumentServices = {
   createDocument,
   myAllDocuments,
@@ -1204,4 +1207,5 @@ export const DocumentServices = {
   deleteDocument,
   // saveToDrive,
   generateCSV,
+  getProduct,
 };
