@@ -172,9 +172,10 @@ const generateCSV = catchAsync(async (req: Request, res: Response) => {
 
 // Get Product
 const getProduct = catchAsync(async (req: Request, res: Response) => {
+  const { id: userId } = req.user;
   const { id } = req.params;
 
-  const result = await DocumentServices.getProduct(id);
+  const result = await DocumentServices.getProduct(userId, id);
 
   sendResponse(res, {
     success: true,

@@ -234,11 +234,14 @@ enum ProductStatusEnum {
 }
 
 model ProductStatus {
-  id           String            @id @default(auto()) @map("_id") @db.ObjectId
-  status       ProductStatusEnum @default(PENDING)
-  userId       String            @db.ObjectId
-  productId    String            @db.ObjectId
-  customFields Json
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  status          ProductStatusEnum @default(PENDING)
+  userId          String            @db.ObjectId
+  productId       String            @db.ObjectId
+  product         Int               @default(0)
+  generatedImages Int               @default(0)
+  totalSavedTimes Int               @default(0)
+  customFields    Json
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

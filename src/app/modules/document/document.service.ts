@@ -1,5 +1,10 @@
 import prisma from "../../lib/prisma";
-import { ProductType, ModelType, Prisma } from "@prisma/client";
+import {
+  ProductType,
+  ModelType,
+  Prisma,
+  ProductStatusEnum,
+} from "@prisma/client";
 import { formatDateAndTime } from "../../utils/formatDate";
 import axios from "axios";
 import config from "../../../config";
@@ -275,6 +280,9 @@ const uploadProductToAI = async (
       productId: response?.data.product_id,
       status: response?.data.product.status,
       customFields: response?.data.product,
+      product: products,
+      generatedImages,
+      totalSavedTimes,
     },
   });
 
@@ -1323,17 +1331,88 @@ const generateCSV = async (documentId: string) => {
 
 // authorize().then(uploadFile).catch("error", console.error); // function call
 
-const getProduct = async (productId: string) => {
-  console.log("productId", productId);
-
-  const response = await axios.get(`${process.env.AI_API}/${productId}`, {
-    // params: { product_id: productId },
+const getProduct = async (userId: string, id: string) => {
+  const isProductExist = await prisma.productStatus.findUnique({
+    where: {
+      id,
+    },
   });
+
+  console.log("productStatus", isProductExist);
+
+  if (!isProductExist) {
+    throw new ApiError(404, "Product not found");
+  }
+
+  if (isProductExist.status === ProductStatusEnum.COMPLETED) {
+    return isProductExist;
+  }
+
+  const response = await axios.get(
+    `${process.env.AI_API}/${isProductExist.productId}`,
+    {
+      // params: { product_id: productId },
+    },
+  );
 
   console.log("response", response.data);
 
-  if (response?.data?.status !== "completed") {
-    return null;
+  if (response.data.status === ProductStatusEnum.COMPLETED) {
+    const document = await prisma.document.create({
+      data: {
+        userId,
+        aiGenerated: response?.data,
+      },
+    });
+
+    // Promise.all preserves the order of its input array in the returned
+    // array, regardless of which promise settles first — pushing ids from
+    // inside each concurrent callback instead (the previous approach) does
+    // not, since concurrent DB writes can complete in any order.
+    const generatedImageId: string[] = await Promise.all(
+      response?.data?.product.images_batch.map(async (item: any) => {
+        const image = await prisma.generatedImage.create({
+          data: {
+            userId,
+            imageDetails: item,
+          },
+        });
+
+        return image.id;
+      }),
+    );
+
+    // response?.data.product?.images_batch.forEach((item: any) => {
+    //   generatedImages++;
+    // });
+
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        totalCreatedProducts: {
+          increment: isProductExist.product,
+        },
+        totalGeneratedProducts: {
+          increment: isProductExist.generatedImages,
+        },
+        totalSavedTimes: {
+          increment: isProductExist.totalSavedTimes,
+        },
+      },
+    });
+
+    await prisma.productStatus.update({
+      where: {
+        id,
+      },
+      data: {
+        status: ProductStatusEnum.COMPLETED,
+      },
+    });
+
+    return { document, generatedImageId };
   }
 
   return response.data;
