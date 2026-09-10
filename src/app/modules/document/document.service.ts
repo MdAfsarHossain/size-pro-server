@@ -268,7 +268,17 @@ const uploadProductToAI = async (
   // });
 
   // return { document, generatedImageId };
-  return response?.data;
+
+  const status = await prisma.productStatus.create({
+    data: {
+      userId,
+      productId: response?.data.product_id,
+      status: response?.data.product.status,
+      customFields: response?.data.product,
+    },
+  });
+
+  return status;
 };
 
 // My All Documents
@@ -1314,9 +1324,18 @@ const generateCSV = async (documentId: string) => {
 // authorize().then(uploadFile).catch("error", console.error); // function call
 
 const getProduct = async (productId: string) => {
-  const response = await axios.get(`${process.env.AI_API}/`, {
-    params: { product_id: productId },
+  console.log("productId", productId);
+
+  const response = await axios.get(`${process.env.AI_API}/${productId}`, {
+    // params: { product_id: productId },
   });
+
+  console.log("response", response.data);
+
+  if (response?.data?.status !== "completed") {
+    return null;
+  }
+
   return response.data;
 };
 
