@@ -237,7 +237,7 @@ model ProductStatus {
   id              String            @id @default(auto()) @map("_id") @db.ObjectId
   status          ProductStatusEnum @default(PENDING)
   userId          String            @db.ObjectId
-  productId       String            @db.ObjectId
+  productId       String
   product         Int               @default(0)
   generatedImages Int               @default(0)
   totalSavedTimes Int               @default(0)

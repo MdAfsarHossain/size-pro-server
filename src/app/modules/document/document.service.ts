@@ -274,11 +274,13 @@ const uploadProductToAI = async (
 
   // return { document, generatedImageId };
 
+  console.log("response?.data", response?.data);
+
   const status = await prisma.productStatus.create({
     data: {
       userId,
       productId: response?.data.product_id,
-      status: response?.data.product.status,
+      status: "PENDING",
       customFields: response?.data.product,
       product: products,
       generatedImages,
@@ -1338,7 +1340,7 @@ const getProduct = async (userId: string, id: string) => {
     },
   });
 
-  console.log("productStatus", isProductExist);
+  // console.log("productStatus", isProductExist);
 
   if (!isProductExist) {
     throw new ApiError(404, "Product not found");
@@ -1357,7 +1359,7 @@ const getProduct = async (userId: string, id: string) => {
 
   console.log("response", response.data);
 
-  if (response.data.status === ProductStatusEnum.COMPLETED) {
+  if (response.data.status === "completed") {
     const document = await prisma.document.create({
       data: {
         userId,
