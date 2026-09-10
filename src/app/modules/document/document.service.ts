@@ -1,5 +1,10 @@
 import prisma from "../../lib/prisma";
-import { ProductType, ModelType, Prisma } from "@prisma/client";
+import {
+  ProductType,
+  ModelType,
+  Prisma,
+  ProductStatusEnum,
+} from "@prisma/client";
 import { formatDateAndTime } from "../../utils/formatDate";
 import axios from "axios";
 import config from "../../../config";
@@ -24,7 +29,6 @@ interface DocumentData {
   // imageDiagram?: string;
 }
 
-
 // Create Document
 const createDocument = async (
   userId: string,
@@ -34,9 +38,9 @@ const createDocument = async (
   const language = documentData.language;
   const features = documentData.features;
   const gender = documentData.gender;
-  const type = documentData.type;  
+  const type = documentData.type;
   console.log(documentData);
-  
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -59,7 +63,7 @@ const createDocument = async (
   formData.append("seller_name", fullName);
   formData.append("language", language);
   formData.append("gender", JSON.stringify(gender));
-  formData.append('type', JSON.stringify(type))
+  formData.append("type", JSON.stringify(type));
   files.images.forEach((file: any) => {
     products++;
     const fileBuffer = fs.readFileSync(file.path);
@@ -67,8 +71,8 @@ const createDocument = async (
     formData.append("images", blob, file.originalname);
   });
 
-  // Backparts Image 
-   files.backpart_images.forEach((file: any) => {
+  // Backparts Image
+  files.backpart_images.forEach((file: any) => {
     // products++;
     const fileBuffer = fs.readFileSync(file.path);
     const blob = new Blob([fileBuffer], { type: file.mimetype });
@@ -149,6 +153,142 @@ const createDocument = async (
   });
 
   return { document, generatedImageId };
+};
+
+// Upload Product To AI
+const uploadProductToAI = async (
+  userId: string,
+  documentData: any,
+  files: any,
+) => {
+  const language = documentData.language;
+  const features = documentData.features;
+  const gender = documentData.gender;
+  const type = documentData.type;
+  console.log(documentData);
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      firstName: true,
+      lastName: true,
+    },
+  });
+
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  const fullName = `${user.firstName} ${user.lastName}`;
+  let products = 0;
+
+  const formData = new FormData();
+  // formData.append("features_json", JSON.stringify(documentData)); // It's work
+  formData.append("features_json", JSON.stringify(features));
+  formData.append("seller_id", userId);
+  formData.append("seller_name", fullName);
+  formData.append("language", language);
+  formData.append("gender", JSON.stringify(gender));
+  formData.append("type", JSON.stringify(type));
+  files.images.forEach((file: any) => {
+    products++;
+    const fileBuffer = fs.readFileSync(file.path);
+    const blob = new Blob([fileBuffer], { type: file.mimetype });
+    formData.append("images", blob, file.originalname);
+  });
+
+  // Backparts Image
+  files.backpart_images.forEach((file: any) => {
+    // products++;
+    const fileBuffer = fs.readFileSync(file.path);
+    const blob = new Blob([fileBuffer], { type: file.mimetype });
+    formData.append("backpart_images", blob, file.originalname);
+  });
+
+  const generatedImages = features.reduce(
+    (sum: any, item: any) => sum + item.features.length,
+    0,
+  );
+
+  let totalSavedTimes = features.reduce(
+    (sum: any, item: any) => sum + item.features.length,
+    0,
+  );
+
+  totalSavedTimes = totalSavedTimes * 15;
+  let response;
+
+  try {
+    response = await axios.post(`${process.env.AI_API}/generate`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      timeout: 100000000, // 1000 seconds
+    });
+  } catch (error: any) {
+    console.log(`AI Post Error.`);
+    console.log(error);
+    throw new ApiError(httpStatus.BAD_REQUEST, "AI Post Error.");
+  }
+
+  // const document = await prisma.document.create({
+  //   data: {
+  //     userId,
+  //     aiGenerated: response?.data,
+  //   },
+  // });
+
+  // Promise.all preserves the order of its input array in the returned
+  // array, regardless of which promise settles first — pushing ids from
+  // inside each concurrent callback instead (the previous approach) does
+  // not, since concurrent DB writes can complete in any order.
+  // const generatedImageId: string[] = await Promise.all(
+  //   response?.data?.product.images_batch.map(async (item: any) => {
+  //     const image = await prisma.generatedImage.create({
+  //       data: {
+  //         userId,
+  //         imageDetails: item,
+  //       },
+  //     });
+
+  //     return image.id;
+  //   }),
+  // );
+
+  // await prisma.user.update({
+  //   where: {
+  //     id: userId,
+  //   },
+  //   data: {
+  //     totalCreatedProducts: {
+  //       increment: products,
+  //     },
+  //     totalGeneratedProducts: {
+  //       increment: generatedImages,
+  //     },
+  //     totalSavedTimes: {
+  //       increment: totalSavedTimes,
+  //     },
+  //   },
+  // });
+
+  // return { document, generatedImageId };
+
+  console.log("response?.data", response?.data);
+
+  const status = await prisma.productStatus.create({
+    data: {
+      userId,
+      productId: response?.data.product_id,
+      status: "PENDING",
+      customFields: response?.data.product,
+      product: products,
+      generatedImages,
+      totalSavedTimes,
+    },
+  });
+
+  return status;
 };
 
 // My All Documents
@@ -317,9 +457,7 @@ const myAllDocuments = async (userId: string, query: any) => {
     const rawMatch = {
       userId: { $oid: userId },
       isDeleted: false,
-      $or: [
-        { "imageDetails.product_title": searchRegex },
-      ],
+      $or: [{ "imageDetails.product_title": searchRegex }],
     };
 
     const rawDocs: any = await prisma.generatedImage.findRaw({
@@ -340,7 +478,7 @@ const myAllDocuments = async (userId: string, query: any) => {
       createdAt: doc.createdAt?.$date
         ? new Date(doc.createdAt.$date)
         : new Date(),
-        isShopifyUploaded: doc.isShopifyUploaded,
+      isShopifyUploaded: doc.isShopifyUploaded,
     }));
 
     const countDocs: any = await prisma.generatedImage.aggregateRaw({
@@ -393,7 +531,6 @@ const myAllDocuments = async (userId: string, query: any) => {
   const sellerName = seller ? `${seller.firstName} ${seller.lastName}` : "";
 
   const finalResult = documents.map((document) => {
-
     // Parse imageDetails if it's a string, or use as is if it's already an object
     const imageDetails =
       typeof document.imageDetails === "string"
@@ -427,7 +564,7 @@ const myAllDocuments = async (userId: string, query: any) => {
       isImageDiagram: imageDetails?.image_diagram_url?.length > 0 || false,
       isDeleted: document.isDeleted,
       dateFormat: formatDateAndTime(document.createdAt, appTimezone),
-      isShopifyUploaded: document.isShopifyUploaded,      
+      isShopifyUploaded: document.isShopifyUploaded,
     };
   });
 
@@ -1196,6 +1333,93 @@ const generateCSV = async (documentId: string) => {
 
 // authorize().then(uploadFile).catch("error", console.error); // function call
 
+const getProduct = async (userId: string, id: string) => {
+  const isProductExist = await prisma.productStatus.findUnique({
+    where: {
+      id,
+    },
+  });
+
+  // console.log("productStatus", isProductExist);
+
+  if (!isProductExist) {
+    throw new ApiError(404, "Product not found");
+  }
+
+  if (isProductExist.status === ProductStatusEnum.COMPLETED) {
+    return isProductExist;
+  }
+
+  const response = await axios.get(
+    `${process.env.AI_API}/${isProductExist.productId}`,
+    {
+      // params: { product_id: productId },
+    },
+  );
+
+  console.log("response", response.data);
+
+  if (response.data.status === "completed") {
+    const document = await prisma.document.create({
+      data: {
+        userId,
+        aiGenerated: response?.data,
+      },
+    });
+
+    // Promise.all preserves the order of its input array in the returned
+    // array, regardless of which promise settles first — pushing ids from
+    // inside each concurrent callback instead (the previous approach) does
+    // not, since concurrent DB writes can complete in any order.
+    const generatedImageId: string[] = await Promise.all(
+      response?.data?.product.images_batch.map(async (item: any) => {
+        const image = await prisma.generatedImage.create({
+          data: {
+            userId,
+            imageDetails: item,
+          },
+        });
+
+        return image.id;
+      }),
+    );
+
+    // response?.data.product?.images_batch.forEach((item: any) => {
+    //   generatedImages++;
+    // });
+
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        totalCreatedProducts: {
+          increment: isProductExist.product,
+        },
+        totalGeneratedProducts: {
+          increment: isProductExist.generatedImages,
+        },
+        totalSavedTimes: {
+          increment: isProductExist.totalSavedTimes,
+        },
+      },
+    });
+
+    await prisma.productStatus.update({
+      where: {
+        id,
+      },
+      data: {
+        status: ProductStatusEnum.COMPLETED,
+      },
+    });
+
+    return { document, generatedImageId };
+  }
+
+  return response.data;
+};
+
 export const DocumentServices = {
   createDocument,
   myAllDocuments,
@@ -1204,4 +1428,6 @@ export const DocumentServices = {
   deleteDocument,
   // saveToDrive,
   generateCSV,
+  getProduct,
+  uploadProductToAI,
 };

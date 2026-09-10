@@ -87,8 +87,8 @@ model Document {
   // mannequin   String
 
   // AI Generated
-  aiGenerated Json
-  isDeleted   Boolean @default(false)
+  aiGenerated       Json
+  isDeleted         Boolean @default(false)
   isShopifyUploaded Boolean @default(false)
 
   createdAt DateTime @default(now())
@@ -119,8 +119,8 @@ model GeneratedImage {
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  imageDetails Json
-  isDeleted    Boolean @default(false)
+  imageDetails      Json
+  isDeleted         Boolean @default(false)
   isShopifyUploaded Boolean @default(false)
 
   createdAt DateTime @default(now())
@@ -226,6 +226,27 @@ model ModelPosition {
   updatedAt DateTime @updatedAt
 
   @@map("model-position")
+}
+
+enum ProductStatusEnum {
+  PENDING
+  COMPLETED
+}
+
+model ProductStatus {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  status          ProductStatusEnum @default(PENDING)
+  userId          String            @db.ObjectId
+  productId       String
+  product         Int               @default(0)
+  generatedImages Int               @default(0)
+  totalSavedTimes Int               @default(0)
+  customFields    Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("product-status")
 }
 
 // model RecentActivity {

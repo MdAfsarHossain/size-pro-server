@@ -17,6 +17,16 @@ route.post(
   DocumentControllers.createDocument,
 );
 
+// Upload Product To AI
+route.post(
+  "/upload-product-to-ai",
+  // auth(Role.ADMIN, Role.SUPERADMIN),
+  auth(),
+  fileUploader.documentImages,
+  parseBodyData,
+  DocumentControllers.uploadProductToAI,
+);
+
 // My All Documents
 route.get(
   "/",
@@ -59,6 +69,13 @@ route.get(
   "/generate-csv/:id",
   // auth(Role.ADMIN, Role.SUPERADMIN),
   DocumentControllers.generateCSV,
+);
+
+// Get Product
+route.get(
+  "/product/:id",
+  auth(Role.ADMIN, Role.SUPERADMIN),
+  DocumentControllers.getProduct,
 );
 
 export const DocumentRouters = route;

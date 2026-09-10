@@ -39,6 +39,26 @@ const createDocument = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// Upload Product To AI
+const uploadProductToAI = catchAsync(async (req: Request, res: Response) => {
+  const { id: userId } = req.user;
+  const files = req.files;
+  const payload = req.body;
+
+  const result = await DocumentServices.uploadProductToAI(
+    userId,
+    payload,
+    files,
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Product uploaded successfully",
+    data: result,
+  });
+});
+
 // My All Documents
 const myAllDocuments = catchAsync(async (req: Request, res: Response) => {
   const { id: userId } = req.user;
@@ -150,6 +170,21 @@ const generateCSV = catchAsync(async (req: Request, res: Response) => {
   // return res.status(200).send(csvBuffer);
 });
 
+// Get Product
+const getProduct = catchAsync(async (req: Request, res: Response) => {
+  const { id: userId } = req.user;
+  const { id } = req.params;
+
+  const result = await DocumentServices.getProduct(userId, id);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Product retrieved successfully",
+    data: result,
+  });
+});
+
 export const DocumentControllers = {
   createDocument,
   myAllDocuments,
@@ -158,4 +193,6 @@ export const DocumentControllers = {
   deleteDocument,
   saveToDrive,
   generateCSV,
+  getProduct,
+  uploadProductToAI,
 };
