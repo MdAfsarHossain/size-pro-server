@@ -1372,7 +1372,7 @@ const getProduct = async (userId: string, id: string) => {
     // inside each concurrent callback instead (the previous approach) does
     // not, since concurrent DB writes can complete in any order.
     const generatedImageId: string[] = await Promise.all(
-      response?.data?.product.images_batch.map(async (item: any) => {
+      response?.data?.images_batch.map(async (item: any) => {
         const image = await prisma.generatedImage.create({
           data: {
             userId,
