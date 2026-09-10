@@ -39,6 +39,26 @@ const createDocument = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// Upload Product To AI
+const uploadProductToAI = catchAsync(async (req: Request, res: Response) => {
+  const { id: userId } = req.user;
+  const files = req.files;
+  const payload = req.body;
+
+  const result = await DocumentServices.uploadProductToAI(
+    userId,
+    payload,
+    files,
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Product uploaded successfully",
+    data: result,
+  });
+});
+
 // My All Documents
 const myAllDocuments = catchAsync(async (req: Request, res: Response) => {
   const { id: userId } = req.user;
@@ -173,4 +193,5 @@ export const DocumentControllers = {
   saveToDrive,
   generateCSV,
   getProduct,
+  uploadProductToAI,
 };

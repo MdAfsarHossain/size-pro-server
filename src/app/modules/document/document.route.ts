@@ -17,6 +17,16 @@ route.post(
   DocumentControllers.createDocument,
 );
 
+// Upload Product To AI
+route.post(
+  "/upload-product-to-ai",
+  // auth(Role.ADMIN, Role.SUPERADMIN),
+  auth(),
+  fileUploader.documentImages,
+  parseBodyData,
+  DocumentControllers.uploadProductToAI,
+);
+
 // My All Documents
 route.get(
   "/",
