@@ -436,34 +436,6 @@ const myAllDocuments = async (userId: string, query: any) => {
   // }
 };
 
-// Get Document
-// const getDocument = async (documentId: string) => {
-//   const cacheKey = `document:${documentId}`;
-
-//   // Get the actual Redis client instance
-//   const redisClient = await createRedisClient();
-
-//   // Check cache first
-//   const cachedData = await redisClient.get(cacheKey);
-//   if (cachedData) {
-//     console.log(`✅ Cache hit for ${cacheKey}`);
-//     return JSON.parse(cachedData);
-//   }
-
-//   console.log(`❌ Cache miss for ${cacheKey}`);
-
-//   const document = await prisma.document.findUnique({
-//     where: { id: documentId },
-//   });
-
-//   // If the document is found, save it in Redis cache for 60 seconds
-//   if (document) {
-//     await redisClient.setEx(cacheKey, 60, JSON.stringify(document));
-//   }
-
-//   return document;
-// };
-
 const getDocument = async (documentId: string) => {
   const document = await prisma.generatedImage.findUnique({
     where: { id: documentId },
