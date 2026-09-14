@@ -56,6 +56,7 @@ const uploadProductImage = upload.array("productImage", 5);
 const documentImages = upload.fields([
   { name: "images", maxCount: 100 },
   { name: "backpart_images", maxCount: 100 },
+  { name: "clothing_tags", maxCount: 100 },
 ]);
 // Memory storage (not `upload`/disk storage) — downstream code needs
 // file.buffer to parse CSV content directly, not a path on disk.
@@ -93,5 +94,5 @@ export const fileUploader = {
   driveImage,
   csvFile,
   testFile,
-  testMultipleFiles
+  testMultipleFiles,
 };

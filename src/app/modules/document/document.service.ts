@@ -165,6 +165,7 @@ const uploadProductToAI = async (
   const features = documentData.features;
   const gender = documentData.gender;
   const type = documentData.type;
+  const clothing_tags_count = documentData.clothing_tags_count;
   console.log(documentData);
 
   const user = await prisma.user.findUnique({
@@ -190,6 +191,8 @@ const uploadProductToAI = async (
   formData.append("language", language);
   formData.append("gender", JSON.stringify(gender));
   formData.append("type", JSON.stringify(type));
+  formData.append("clothing_tags_count", JSON.stringify(clothing_tags_count));
+
   files.images.forEach((file: any) => {
     products++;
     const fileBuffer = fs.readFileSync(file.path);
@@ -205,6 +208,14 @@ const uploadProductToAI = async (
     formData.append("backpart_images", blob, file.originalname);
   });
 
+  // Clothing Tags Image
+  files.clothing_tags.forEach((file: any) => {
+    // products++;
+    const fileBuffer = fs.readFileSync(file.path);
+    const blob = new Blob([fileBuffer], { type: file.mimetype });
+    formData.append("clothing_tags", blob, file.originalname);
+  });
+
   const generatedImages = features.reduce(
     (sum: any, item: any) => sum + item.features.length,
     0,
@@ -217,6 +228,10 @@ const uploadProductToAI = async (
 
   totalSavedTimes = totalSavedTimes * 15;
   let response;
+
+  console.log(formData);
+
+  // return;
 
   try {
     response = await axios.post(`${process.env.AI_API}/generate`, formData, {
