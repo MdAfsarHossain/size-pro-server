@@ -231,7 +231,7 @@ const uploadProductToAI = async (
 
   console.log(formData);
 
-  return;
+  // return;
 
   try {
     response = await axios.post(`${process.env.AI_API}/generate`, formData, {
