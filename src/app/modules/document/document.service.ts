@@ -165,7 +165,7 @@ const uploadProductToAI = async (
   const features = documentData.features;
   const gender = documentData.gender;
   const type = documentData.type;
-  const clothing_tags_count = documentData.clothing_tags_count;
+  const clothing_tags_count = documentData?.clothing_tags_count;
   console.log(documentData);
 
   const user = await prisma.user.findUnique({
@@ -191,7 +191,9 @@ const uploadProductToAI = async (
   formData.append("language", language);
   formData.append("gender", JSON.stringify(gender));
   formData.append("type", JSON.stringify(type));
-  formData.append("clothing_tags_count", JSON.stringify(clothing_tags_count));
+  if(clothing_tags_count) {
+    formData.append("clothing_tags_count", JSON.stringify(clothing_tags_count));
+  }
 
   files.images.forEach((file: any) => {
     products++;
