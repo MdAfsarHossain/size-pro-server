@@ -1184,7 +1184,16 @@ const getProduct = async (userId: string, id: string) => {
   }
 
   if (isProductExist.status === ProductStatusEnum.COMPLETED) {
-    return isProductExist;
+    const finalResult = await prisma.aiGeneratedProduct.findUnique({
+      where: {
+        productId: id,
+      },
+      select: {
+        document: true,
+        generatedImageId: true,
+      },
+    });
+    return finalResult;
   }
 
   const response = await axios.get(
@@ -1251,7 +1260,16 @@ const getProduct = async (userId: string, id: string) => {
       },
     });
 
-    return { document, generatedImageId };
+    const finalResult = await prisma.aiGeneratedProduct.create({
+      data: {
+        userId,
+        productId: id,
+        document: document,
+        generatedImageId,
+      },
+    });
+
+    return { document, generatedImageId, finalResult };
   }
 
   return response.data;
