@@ -209,12 +209,14 @@ const uploadProductToAI = async (
   });
 
   // Clothing Tags Image
-  files.clothing_tags.forEach((file: any) => {
-    // products++;
-    const fileBuffer = fs.readFileSync(file.path);
-    const blob = new Blob([fileBuffer], { type: file.mimetype });
-    formData.append("clothing_tags", blob, file.originalname);
-  });
+  if (files.clothing_tags) {
+    files.clothing_tags.forEach((file: any) => {
+      // products++;
+      const fileBuffer = fs.readFileSync(file.path);
+      const blob = new Blob([fileBuffer], { type: file.mimetype });
+      formData.append("clothing_tags", blob, file.originalname);
+    });
+  }
 
   const generatedImages = features.reduce(
     (sum: any, item: any) => sum + item.features.length,
