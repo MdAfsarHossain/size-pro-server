@@ -129,6 +129,89 @@ model GeneratedImage {
   @@map("generatedImage")
 }
 
+type ProductDimensions {
+  chest_width_cm          Float?
+  waist_width_cm          Float?
+  back_length_cm          Float?
+  sleeve_length_cm        Float?
+  has_sleeves             Boolean?
+  under_bust_cm           Float?
+  dress_length_cm         Float?
+  hip_width_cm            Float?
+  collar_circumference_cm Float?
+  shoe_size_cm            Float?
+  available_sizes         String[]
+  size_guide              String?
+}
+
+type ProductListing {
+  title       String?
+  description String?
+  tags        String[]
+  fabric      String?
+}
+
+type ProductDetailsInfo {
+  category      String?
+  brand         String?
+  sleeve_length String?
+  dress_type    String?
+  age_group     String?
+  gender        String?
+}
+
+type ProductVariantData {
+  sizes     String[]
+  colors    String[]
+  condition String?
+  feature   String?
+}
+
+type ImagesBatchItem {
+  image_index            Int
+  selected_features      String[]
+  clothing_tag_urls      String[]
+  generated_skus         Json
+  background_removed_url String?
+  backpart_image         String?
+  care_instructions      String?
+  description            String?
+  dimensions             ProductDimensions?
+  fabric                 String?
+  key_features           String[]
+  listing                ProductListing?
+  model_urls             String[]
+  product_code           String?
+  product_details        ProductDetailsInfo?
+  product_title          String?
+  seo_tags               String[]
+  status                 String?
+  tags                   String[]
+  updated_at             String?
+  variant_data           ProductVariantData?
+  virtual_tryon_urls     String[]
+}
+
+// Typed reference model mirroring the AI_API generation response
+// (Document.aiGenerated / GeneratedImage.imageDetails currently store this
+// same data as loose Json). Additive only — does not replace those fields.
+model AiGeneratedProduct {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId    String @db.ObjectId
+  productId String @db.ObjectId
+
+  document         Json
+  generatedImageId String[] @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId])
+  @@index([userId, productId])
+  @@map("aiGeneratedProduct")
+}
+
 model ShopifyUploadHistory {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
