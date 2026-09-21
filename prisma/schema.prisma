@@ -24,17 +24,17 @@ enum UserStatus {
 }
 
 enum Gender {
-  Male
-  Female
-  Other
+  MALE
+  FEMALE
+  OTHER
 }
 
 enum UserAccessType {
-  top
-  bottom
-  full_body
-  head
-  shoes
+  TOP
+  BOTTOM
+  FULL_BODY
+  HEAD
+  SHOES
 }
 
 model User {
@@ -55,15 +55,15 @@ model User {
   status    UserStatus @default(ACTIVE)
   lastLogin DateTime?
 
-  gender                Gender?
-  is_dimensions         Boolean         @default(false)
-  is_ai_virtual         Boolean         @default(false)
-  is_mannequin          Boolean         @default(false)
-  is_background_removal Boolean         @default(false)
-  is_model              Boolean         @default(false)
-  is_image_diagram      Boolean         @default(false)
-  type                  UserAccessType?
-  is_full_access        Boolean         @default(false)
+  gender                Gender?        @default(MALE)
+  is_dimensions         Boolean        @default(false)
+  is_ai_virtual         Boolean        @default(false)
+  is_mannequin          Boolean        @default(false)
+  is_background_removal Boolean        @default(false)
+  is_model              Boolean        @default(false)
+  is_image_diagram      Boolean        @default(false)
+  type                  UserAccessType @default(FULL_BODY)
+  is_full_access        Boolean        @default(false)
 
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
