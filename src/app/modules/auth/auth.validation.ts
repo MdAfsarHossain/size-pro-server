@@ -1,4 +1,4 @@
-import { Role } from "@prisma/client";
+import { Gender, Role, UserAccessType } from "@prisma/client";
 import z from "zod";
 
 // ======================================
@@ -32,10 +32,41 @@ const registerUser = z.object({
         required_error: "Password is required!",
       })
       .min(8, "Password should be at least 8 characters"),
-    role: z.enum([Role.ADMIN], {
+    gender: z.enum([Gender.Male, Gender.Female, Gender.Other], {
       errorMap: () => {
         return {
-          message: `Role should be either ${Role.ADMIN}`,
+          message: `Gender should be either ${Gender.Male} or ${Gender.Female} or ${Gender.Other}`,
+        };
+      },
+    }),
+    is_dimensions: z.boolean().optional(),
+    is_ai_virtual: z.boolean().optional(),
+    is_mannequin: z.boolean().optional(),
+    is_background_removal: z.boolean().optional(),
+    is_model: z.boolean().optional(),
+    is_image_diagram: z.boolean().optional(),
+    type: z
+      .enum(
+        [
+          UserAccessType.top,
+          UserAccessType.bottom,
+          UserAccessType.full_body,
+          UserAccessType.head,
+          UserAccessType.shoes,
+        ],
+        {
+          errorMap: () => {
+            return {
+              message: `Type should be either ${UserAccessType.top} or ${UserAccessType.bottom} or ${UserAccessType.full_body} or ${UserAccessType.head} or ${UserAccessType.shoes}`,
+            };
+          },
+        },
+      )
+      .optional(),
+    role: z.enum([Role.ADMIN, Role.USER], {
+      errorMap: () => {
+        return {
+          message: `Role should be either ${Role.ADMIN} or ${Role.USER}`,
         };
       },
     }),
