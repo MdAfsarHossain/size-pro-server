@@ -26,6 +26,13 @@ router.delete(
   AdminControllers.removeAdmin,
 );
 
+// Update Admin/User (SUPERADMIN can update ADMIN & USER; ADMIN can update other ADMIN & USER but not SUPERADMIN)
+router.patch(
+  "/update-user/:id",
+  auth(Role.SUPERADMIN, Role.ADMIN),
+  AdminControllers.updateAdminOrUser,
+);
+
 // Add Social Media
 router.post(
   "/add-social-media",
