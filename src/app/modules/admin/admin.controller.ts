@@ -59,6 +59,24 @@ const removeAdmin = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// Update Admin/User
+const updateAdminOrUser = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const result = await AdminServices.updateAdminOrUser(
+    req.user.role,
+    id,
+    req.body,
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "User updated successfully",
+    data: result,
+  });
+});
+
 // Add Social Media
 const addSocialMedia = catchAsync(async (req: Request, res: Response) => {
   const data = req.body;
@@ -139,6 +157,7 @@ export const AdminControllers = {
   getAllAdmin,
   getSingleAdmin,
   removeAdmin,
+  updateAdminOrUser,
   addSocialMedia,
   updateSocialMedia,
   getSocialMedia,

@@ -1,5 +1,7 @@
 import { Prisma, Role } from "@prisma/client";
+import httpStatus from "http-status";
 import prisma from "../../lib/prisma";
+import ApiError from "../../errors/ApiError";
 import { createRedisClient } from "../../../config/redis";
 import { DocumentServices } from "../document/document.service";
 import { formatDateAndTime } from "../../utils/formatDate";
@@ -351,6 +353,7 @@ const getSingleAdmin = async (
       firstName: true,
       lastName: true,
       email: true,
+      role: true,
       image: true,
       location: true,
       phone: true,
@@ -565,6 +568,66 @@ const removeAdmin = async (id: string) => {
     invalidatePattern("admin:*"), // Optional: Invalidate any other admin-related caches
   ]).catch((error) => {
     console.error("Failed to invalidate admin caches:", error);
+  });
+
+  return result;
+};
+
+// Update Admin/User (SUPERADMIN can update ADMIN & USER; ADMIN can update other ADMIN & USER but not SUPERADMIN)
+const updateAdminOrUser = async (
+  requesterRole: Role,
+  targetUserId: string,
+  payload: any,
+) => {
+  const targetUser = await prisma.user.findUnique({
+    where: { id: targetUserId },
+  });
+
+  if (!targetUser) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  if (
+    targetUser.role === Role.SUPERADMIN &&
+    requesterRole !== Role.SUPERADMIN
+  ) {
+    throw new ApiError(
+      httpStatus.FORBIDDEN,
+      "You are not allowed to update a superadmin's data",
+    );
+  }
+
+  if (payload.role === Role.SUPERADMIN && requesterRole !== Role.SUPERADMIN) {
+    throw new ApiError(
+      httpStatus.FORBIDDEN,
+      "You are not allowed to grant superadmin role",
+    );
+  }
+
+  const result = await prisma.user.update({
+    where: { id: targetUserId },
+    data: payload,
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      image: true,
+      location: true,
+      phone: true,
+      role: true,
+      status: true,
+      gender: true,
+      type: true,
+      is_dimensions: true,
+      is_ai_virtual: true,
+      is_mannequin: true,
+      is_background_removal: true,
+      is_model: true,
+      is_image_diagram: true,
+      is_full_access: true,
+      updatedAt: true,
+    },
   });
 
   return result;
@@ -869,6 +932,7 @@ export const AdminServices = {
   getAllAdmin,
   getSingleAdmin,
   removeAdmin,
+  updateAdminOrUser,
   addSocialMedia,
   updateSocialMedia,
   getSocialMedia,
