@@ -6,12 +6,16 @@ import { Role } from "@prisma/client";
 const router = Router();
 
 // All admin
-router.get("/all-admin", auth(Role.SUPERADMIN), AdminControllers.getAllAdmin);
+router.get(
+  "/all-admin",
+  auth(Role.SUPERADMIN, Role.ADMIN),
+  AdminControllers.getAllAdmin,
+);
 
 // Get Single Admin
 router.get(
   "/single-admin/:id",
-  auth(Role.SUPERADMIN),
+  auth(Role.SUPERADMIN, Role.ADMIN),
   AdminControllers.getSingleAdmin,
 );
 

@@ -357,6 +357,15 @@ const getSingleAdmin = async (
       createdAt: true,
       totalCreatedProducts: true,
       totalGeneratedProducts: true,
+      gender: true,
+      type: true,
+      is_ai_virtual: true,
+      is_background_removal: true,
+      is_dimensions: true,
+      is_image_diagram: true,
+      is_mannequin: true,
+      is_model: true,
+      is_full_access: true,
       generatedImages: {
         select: {
           id: true,

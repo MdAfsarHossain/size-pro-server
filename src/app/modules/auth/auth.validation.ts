@@ -32,10 +32,10 @@ const registerUser = z.object({
         required_error: "Password is required!",
       })
       .min(8, "Password should be at least 8 characters"),
-    gender: z.enum([Gender.Male, Gender.Female, Gender.Other], {
+    gender: z.enum([Gender.MALE, Gender.FEMALE, Gender.OTHER], {
       errorMap: () => {
         return {
-          message: `Gender should be either ${Gender.Male} or ${Gender.Female} or ${Gender.Other}`,
+          message: `Gender should be either ${Gender.MALE} or ${Gender.FEMALE} or ${Gender.OTHER}`,
         };
       },
     }),
@@ -48,16 +48,16 @@ const registerUser = z.object({
     type: z
       .enum(
         [
-          UserAccessType.top,
-          UserAccessType.bottom,
-          UserAccessType.full_body,
-          UserAccessType.head,
-          UserAccessType.shoes,
+          UserAccessType.TOP,
+          UserAccessType.BOTTOM,
+          UserAccessType.FULL_BODY,
+          UserAccessType.HEAD,
+          UserAccessType.SHOES,
         ],
         {
           errorMap: () => {
             return {
-              message: `Type should be either ${UserAccessType.top} or ${UserAccessType.bottom} or ${UserAccessType.full_body} or ${UserAccessType.head} or ${UserAccessType.shoes}`,
+              message: `Type should be either ${UserAccessType.TOP} or ${UserAccessType.BOTTOM} or ${UserAccessType.FULL_BODY} or ${UserAccessType.HEAD} or ${UserAccessType.SHOES}`,
             };
           },
         },
