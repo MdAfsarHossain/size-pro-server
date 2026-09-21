@@ -17,6 +17,15 @@ const getMyProfile = async (userId: string) => {
       location: true,
       image: true,
       role: true,
+      gender: true,
+      is_dimensions: true,
+      is_ai_virtual: true,
+      is_mannequin: true,
+      is_background_removal: true,
+      is_model: true,
+      is_image_diagram: true,
+      type: true,
+      is_full_access: true,
     },
   });
 
