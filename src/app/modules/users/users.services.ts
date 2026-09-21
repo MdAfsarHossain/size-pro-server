@@ -1,7 +1,19 @@
 import httpStatus from "http-status";
+import { Role } from "@prisma/client";
 import prisma from "../../lib/prisma";
 import ApiError from "../../errors/ApiError";
 import { S3Uploader } from "../../lib/S3Uploader";
+
+// Only ADMIN/SUPERADMIN may update these access-control fields on their own profile
+const ADMIN_ONLY_PROFILE_FIELDS = [
+  "is_dimensions",
+  "is_ai_virtual",
+  "is_mannequin",
+  "is_background_removal",
+  "is_model",
+  "is_image_diagram",
+  "is_full_access",
+] as const;
 
 const getMyProfile = async (userId: string) => {
   const user = await prisma.user.findUnique({
@@ -43,6 +55,19 @@ const updateMyProfile = async (userId: string, payload: any, file: any) => {
   });
 
   if (!isUserExist) throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+
+  if (isUserExist.role === Role.USER) {
+    const forbiddenField = ADMIN_ONLY_PROFILE_FIELDS.find(
+      (field) => payload[field] !== undefined,
+    );
+
+    if (forbiddenField) {
+      throw new ApiError(
+        httpStatus.FORBIDDEN,
+        `You are not allowed to update "${forbiddenField}"`,
+      );
+    }
+  }
 
   if (file) {
     try {
