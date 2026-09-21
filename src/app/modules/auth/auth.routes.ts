@@ -29,7 +29,7 @@ router.post("/resend-otp", AuthControllers.resendOtp);
 router.post(
   "/add-admin",
   validateRequest(authValidation.registerUser),
-  auth(Role.SUPERADMIN),
+  auth(Role.SUPERADMIN, Role.ADMIN),
   AuthControllers.addAdmin,
 );
 

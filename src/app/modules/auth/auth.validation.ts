@@ -63,6 +63,7 @@ const registerUser = z.object({
         },
       )
       .optional(),
+    is_full_access: z.boolean().optional(),
     role: z.enum([Role.ADMIN, Role.USER], {
       errorMap: () => {
         return {

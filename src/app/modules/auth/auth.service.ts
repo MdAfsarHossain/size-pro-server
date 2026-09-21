@@ -12,7 +12,7 @@ import {
   IUserLogin,
 } from "./auth.interface ";
 import { jwtHelpers } from "../../helpers/jwtHelpers";
-import { Role, UserStatus } from "@prisma/client";
+import { Gender, Role, UserAccessType, UserStatus } from "@prisma/client";
 import { emailTemplate } from "../../utils/emailNotifications/emailHTML";
 import { OTPFn } from "./OTPFn";
 import { forgotEmailTemplate } from "../../utils/emailNotifications/forgotHTML";
@@ -141,6 +141,15 @@ const addAdmin = async (payload: {
   password: string;
   role: string;
   fcmToken?: string;
+  gender?: Gender;
+  is_dimensions?: boolean;
+  is_ai_virtual?: boolean;
+  is_mannequin?: boolean;
+  is_background_removal?: boolean;
+  is_model?: boolean;
+  is_image_diagram?: boolean;
+  type?: UserAccessType;
+  is_full_access?: boolean;
 }) => {
   const existingUser = await prisma.user.findUnique({
     where: { email: payload.email },
@@ -186,6 +195,15 @@ const addAdmin = async (payload: {
     password: hashedPassword,
     role: payload.role || Role.USER,
     fcmToken: payload.fcmToken || undefined,
+    gender: payload.gender,
+    is_dimensions: payload.is_dimensions,
+    is_ai_virtual: payload.is_ai_virtual,
+    is_mannequin: payload.is_mannequin,
+    is_background_removal: payload.is_background_removal,
+    is_model: payload.is_model,
+    is_image_diagram: payload.is_image_diagram,
+    type: payload.type,
+    is_full_access: payload.is_full_access,
   };
 
   const result = await prisma.$transaction(async (transactionClient: any) => {
