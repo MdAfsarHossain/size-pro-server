@@ -11,7 +11,7 @@ const { createRedisClient } = require("./config/redis");
 let redisClient;
 
 async function main() {
-  redisClient = await createRedisClient();
+  // redisClient = await createRedisClient();
 
   const server: Server = app.listen(port, () => {
     console.log("Server is running on port ", port);
