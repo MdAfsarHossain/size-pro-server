@@ -195,7 +195,7 @@ const uploadProductToAI = async (
     formData.append("clothing_tags_count", JSON.stringify(clothing_tags_count));
   }
   if (documentData.mode) {
-    formData.append("mode", JSON.stringify(documentData.mode));
+    formData.append("mode", documentData.mode);
   }
 
   files.images.forEach((file: any) => {
