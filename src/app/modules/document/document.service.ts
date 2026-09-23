@@ -314,11 +314,19 @@ const uploadProductToAI = async (
 };
 
 const myAllDocuments = async (userId: string, query: any) => {
-  const { page, limit, sortBy, sortOrder, search } = query;
+  const { page, limit, sortBy, sortOrder, search, isShopifyUploaded } = query;
 
   const pageNumber = parseInt(page) || 1;
   const limitNumber = parseInt(limit) || 10;
   const skip = (pageNumber - 1) * limitNumber;
+
+  // "true"/"false" filters by upload state; "all" (or omitted) applies no filter
+  const shopifyUploadedFilter: boolean | undefined =
+    isShopifyUploaded === "true"
+      ? true
+      : isShopifyUploaded === "false"
+        ? false
+        : undefined;
 
   let documents: any[] = [];
   let total = 0;
@@ -326,11 +334,15 @@ const myAllDocuments = async (userId: string, query: any) => {
   if (search) {
     const searchRegex = { $regex: search, $options: "i" };
     // Mongoose/MongoDB raw query filter for JSON fields
-    const rawMatch = {
+    const rawMatch: any = {
       userId: { $oid: userId },
       isDeleted: false,
       $or: [{ "imageDetails.product_title": searchRegex }],
     };
+
+    if (shopifyUploadedFilter !== undefined) {
+      rawMatch.isShopifyUploaded = shopifyUploadedFilter;
+    }
 
     const rawDocs: any = await prisma.generatedImage.findRaw({
       filter: rawMatch,
@@ -362,6 +374,9 @@ const myAllDocuments = async (userId: string, query: any) => {
     const whereCondition: Prisma.GeneratedImageWhereInput = {
       userId,
       isDeleted: false,
+      ...(shopifyUploadedFilter !== undefined && {
+        isShopifyUploaded: shopifyUploadedFilter,
+      }),
     };
 
     const sortOption: { [key: string]: string } = {};
@@ -435,6 +450,7 @@ const myAllDocuments = async (userId: string, query: any) => {
       isModel: imageDetails?.model_urls?.length > 0 || false,
       isImageDiagram: imageDetails?.image_diagram_url?.length > 0 || false,
       isDeleted: document.isDeleted,
+      createdAt: document.createdAt,
       dateFormat: formatDateAndTime(document.createdAt, appTimezone),
       isShopifyUploaded: document.isShopifyUploaded,
     };
