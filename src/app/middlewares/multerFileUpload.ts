@@ -54,9 +54,9 @@ const uploadCategoryIcon = upload.single("categoryIcon");
 const uploadProductImage = upload.array("productImage", 5);
 // const documentImages = upload.array("images", 100);
 const documentImages = upload.fields([
-  { name: "images", maxCount: 500 },
-  { name: "backpart_images", maxCount: 500 },
-  { name: "clothing_tags", maxCount: 500 },
+  { name: "images", maxCount: 1000 },
+  { name: "backpart_images", maxCount: 1000 },
+  { name: "clothing_tags", maxCount: 1000 },
 ]);
 // Memory storage (not `upload`/disk storage) — downstream code needs
 // file.buffer to parse CSV content directly, not a path on disk.
