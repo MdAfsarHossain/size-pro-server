@@ -307,6 +307,7 @@ const uploadProductToAI = async (
       product: products,
       generatedImages,
       totalSavedTimes,
+      mode: documentData?.mode,
     },
   });
 
@@ -392,6 +393,7 @@ const myAllDocuments = async (userId: string, query: any) => {
         isDeleted: true,
         createdAt: true,
         isShopifyUploaded: true,
+        mode: true,
       },
       // orderBy: sortOption,
       orderBy: { createdAt: "desc" },
@@ -453,6 +455,7 @@ const myAllDocuments = async (userId: string, query: any) => {
       createdAt: document.createdAt,
       dateFormat: formatDateAndTime(document.createdAt, appTimezone),
       isShopifyUploaded: document.isShopifyUploaded,
+      mode: document.mode,
     };
   });
 
@@ -1233,6 +1236,7 @@ const getProduct = async (userId: string, id: string) => {
       data: {
         userId,
         aiGenerated: response?.data,
+        mode: isProductExist.mode,
       },
     });
 
@@ -1246,6 +1250,7 @@ const getProduct = async (userId: string, id: string) => {
           data: {
             userId,
             imageDetails: item,
+            mode: isProductExist.mode,
           },
         });
 
@@ -1289,6 +1294,7 @@ const getProduct = async (userId: string, id: string) => {
         productId: id,
         document: document,
         generatedImageId,
+        mode: isProductExist.mode,
       },
     });
 
