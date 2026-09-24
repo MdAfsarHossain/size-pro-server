@@ -315,7 +315,8 @@ const uploadProductToAI = async (
 };
 
 const myAllDocuments = async (userId: string, query: any) => {
-  const { page, limit, sortBy, sortOrder, search, isShopifyUploaded } = query;
+  const { page, limit, sortBy, sortOrder, search, isShopifyUploaded, mode } =
+    query;
 
   const pageNumber = parseInt(page) || 1;
   const limitNumber = parseInt(limit) || 10;
@@ -328,6 +329,14 @@ const myAllDocuments = async (userId: string, query: any) => {
       : isShopifyUploaded === "false"
         ? false
         : undefined;
+
+  // "SLOW"/"FAST" (any casing) filters by mode; "all" (or omitted) applies no filter
+  const normalizedMode =
+    typeof mode === "string" ? mode.trim().toUpperCase() : undefined;
+  const modeFilter: "SLOW" | "FAST" | undefined =
+    normalizedMode === "SLOW" || normalizedMode === "FAST"
+      ? normalizedMode
+      : undefined;
 
   let documents: any[] = [];
   let total = 0;
@@ -345,13 +354,23 @@ const myAllDocuments = async (userId: string, query: any) => {
       rawMatch.isShopifyUploaded = shopifyUploadedFilter;
     }
 
+    if (modeFilter !== undefined) {
+      rawMatch.mode = { $regex: `^${modeFilter}$`, $options: "i" };
+    }
+
     const rawDocs: any = await prisma.generatedImage.findRaw({
       filter: rawMatch,
       options: {
         skip,
         limit: limitNumber,
         sort: { createdAt: -1 },
-        projection: { _id: 1, imageDetails: 1, isDeleted: 1, createdAt: 1 },
+        projection: {
+          _id: 1,
+          imageDetails: 1,
+          isDeleted: 1,
+          createdAt: 1,
+          mode: 1,
+        },
       },
     });
 
@@ -364,6 +383,7 @@ const myAllDocuments = async (userId: string, query: any) => {
         ? new Date(doc.createdAt.$date)
         : new Date(),
       isShopifyUploaded: doc.isShopifyUploaded,
+      mode: doc.mode,
     }));
 
     const countDocs: any = await prisma.generatedImage.aggregateRaw({
@@ -377,6 +397,9 @@ const myAllDocuments = async (userId: string, query: any) => {
       isDeleted: false,
       ...(shopifyUploadedFilter !== undefined && {
         isShopifyUploaded: shopifyUploadedFilter,
+      }),
+      ...(modeFilter !== undefined && {
+        mode: { equals: modeFilter, mode: "insensitive" },
       }),
     };
 

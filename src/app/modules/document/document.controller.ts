@@ -62,7 +62,7 @@ const uploadProductToAI = catchAsync(async (req: Request, res: Response) => {
 // My All Documents
 const myAllDocuments = catchAsync(async (req: Request, res: Response) => {
   const { id: userId } = req.user;
-  const { page, limit, sortBy, sortOrder, search, isShopifyUploaded } =
+  const { page, limit, sortBy, sortOrder, search, isShopifyUploaded, mode } =
     req.query;
 
   const result = await DocumentServices.myAllDocuments(userId, {
@@ -72,6 +72,7 @@ const myAllDocuments = catchAsync(async (req: Request, res: Response) => {
     sortOrder,
     search,
     isShopifyUploaded,
+    mode,
   });
 
   sendResponse(res, {
