@@ -342,6 +342,7 @@ enum ProductStatusEnum {
   PENDING
   COMPLETED
   DELETED
+  PARTIAL_COMPLETED
 }
 
 model ProductStatus {
