@@ -1366,7 +1366,7 @@ const deleteProduct = async (userId: string, id: string) => {
 
   console.log("response", response.data);
 
-  if (response.data.deleted) {
+  if (response.data.status === "cancelled") {
     await prisma.productStatus.update({
       where: {
         id,
