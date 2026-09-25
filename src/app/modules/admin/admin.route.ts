@@ -19,14 +19,14 @@ router.get(
   AdminControllers.getSingleAdmin,
 );
 
-// Remove Admin
+// Remove Admin/User (SUPERADMIN can remove ADMIN & USER; ADMIN can only remove USER)
 router.delete(
   "/remove-admin/:id",
-  auth(Role.SUPERADMIN),
+  auth(Role.SUPERADMIN, Role.ADMIN),
   AdminControllers.removeAdmin,
 );
 
-// Update Admin/User (SUPERADMIN can update ADMIN & USER; ADMIN can update other ADMIN & USER but not SUPERADMIN)
+// Update Admin/User (SUPERADMIN can update ADMIN & USER; ADMIN can only update USER)
 router.patch(
   "/update-user/:id",
   auth(Role.SUPERADMIN, Role.ADMIN),

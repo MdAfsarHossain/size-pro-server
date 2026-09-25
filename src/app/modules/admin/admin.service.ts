@@ -10,6 +10,35 @@ import { formatDateAndTime } from "../../utils/formatDate";
 // Global Redis client
 let redisClient;
 
+// Enforces: SUPERADMIN may view/update/delete ADMIN & USER data; ADMIN may only
+// view/update/delete USER data; neither may act on a SUPERADMIN through this module.
+const ensureCanManageTarget = (requesterRole: Role, targetRole: Role) => {
+  if (requesterRole === Role.SUPERADMIN) {
+    if (targetRole === Role.SUPERADMIN) {
+      throw new ApiError(
+        httpStatus.FORBIDDEN,
+        "Superadmin data cannot be managed through this endpoint",
+      );
+    }
+    return;
+  }
+
+  if (requesterRole === Role.ADMIN) {
+    if (targetRole !== Role.USER) {
+      throw new ApiError(
+        httpStatus.FORBIDDEN,
+        "You are only allowed to manage user data",
+      );
+    }
+    return;
+  }
+
+  throw new ApiError(
+    httpStatus.FORBIDDEN,
+    "You are not allowed to perform this action",
+  );
+};
+
 // All Admin
 // const getAllAdmin = async (page: string, limit: string) => {
 //   redisClient = await createRedisClient();
@@ -93,13 +122,21 @@ let redisClient;
 // };
 
 // Redis
-const getAllAdmin = async (page: string, limit: string) => {
+const getAllAdmin = async (
+  requesterRole: Role,
+  page: string,
+  limit: string,
+) => {
   const pageNumber = parseInt(page) || 1;
   const limitNumber = parseInt(limit) || 10;
   const skip = (pageNumber - 1) * limitNumber;
 
+  // SUPERADMIN sees ADMIN & USER; ADMIN only sees USER
   const whereCondition = {
-    role: Role.ADMIN,
+    role:
+      requesterRole === Role.SUPERADMIN
+        ? { in: [Role.ADMIN, Role.USER] }
+        : Role.USER,
   };
 
   // Get Redis instance [citation:1]
@@ -270,6 +307,7 @@ const getAllAdmin = async (page: string, limit: string) => {
 
 // Get Single Admin with Redis caching
 const getSingleAdmin = async (
+  requesterRole: Role,
   id: string,
   page?: string,
   limit?: string,
@@ -384,6 +422,8 @@ const getSingleAdmin = async (
   });
 
   if (!result) return null;
+
+  ensureCanManageTarget(requesterRole, result.role);
 
   const appSetting = await prisma.appSetting.findFirst();
   const appTimezone = appSetting?.timezone ?? "UTC";
@@ -509,8 +549,8 @@ const getSingleAdmin = async (
 // };
 
 // Remove Admin
-const removeAdmin = async (id: string) => {
-  // First check if admin exists
+const removeAdmin = async (requesterRole: Role, id: string) => {
+  // First check if admin/user exists
   const existingAdmin = await prisma.user.findUnique({
     where: { id },
     select: {
@@ -524,13 +564,10 @@ const removeAdmin = async (id: string) => {
   });
 
   if (!existingAdmin) {
-    throw new Error("Admin not found");
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
   }
 
-  // Optional: Check if user is actually an admin before deletion
-  if (existingAdmin.role !== "ADMIN") {
-    throw new Error("User is not an admin");
-  }
+  ensureCanManageTarget(requesterRole, existingAdmin.role);
 
   // Delete the admin
   const result = await prisma.user.delete({
@@ -573,7 +610,7 @@ const removeAdmin = async (id: string) => {
   return result;
 };
 
-// Update Admin/User (SUPERADMIN can update ADMIN & USER; ADMIN can update other ADMIN & USER but not SUPERADMIN)
+// Update Admin/User (SUPERADMIN can update ADMIN & USER; ADMIN can only update USER)
 const updateAdminOrUser = async (
   requesterRole: Role,
   targetUserId: string,
@@ -587,20 +624,16 @@ const updateAdminOrUser = async (
     throw new ApiError(httpStatus.NOT_FOUND, "User not found");
   }
 
+  ensureCanManageTarget(requesterRole, targetUser.role);
+
   if (
-    targetUser.role === Role.SUPERADMIN &&
+    payload.role &&
+    payload.role !== targetUser.role &&
     requesterRole !== Role.SUPERADMIN
   ) {
     throw new ApiError(
       httpStatus.FORBIDDEN,
-      "You are not allowed to update a superadmin's data",
-    );
-  }
-
-  if (payload.role === Role.SUPERADMIN && requesterRole !== Role.SUPERADMIN) {
-    throw new ApiError(
-      httpStatus.FORBIDDEN,
-      "You are not allowed to grant superadmin role",
+      "You are not allowed to change a user's role",
     );
   }
 
@@ -939,12 +972,3 @@ export const AdminServices = {
   getRecentActivity,
   adminDashboardOverview,
 };
-
-/*
-I need data like given image.
-Code path is:
-"/src/app/modules/admin/admin.service.ts" adminDashboardOverview function.
-
-Code line is:
-1101-1124
-*/
