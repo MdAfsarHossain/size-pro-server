@@ -1357,8 +1357,8 @@ const deleteProduct = async (userId: string, id: string) => {
   //   return finalResult;
   // }
 
-  const response = await axios.delete(
-    `${process.env.AI_API}/${isProductExist.productId}`,
+  const response = await axios.post(
+    `${process.env.AI_API}/${isProductExist.productId}/cancel`,
     {
       // params: { product_id: productId },
     },
