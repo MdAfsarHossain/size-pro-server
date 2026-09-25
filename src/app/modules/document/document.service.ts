@@ -13,6 +13,7 @@ import { createRedisClient } from "../../../config/redis";
 import { google } from "googleapis";
 import ApiError from "../../errors/ApiError";
 import httpStatus from "http-status";
+import { log } from "console";
 // import { GoogleAuth } from "google-auth-library";
 
 interface DocumentData {
@@ -1232,7 +1233,8 @@ const getProduct = async (userId: string, id: string) => {
     throw new ApiError(404, "Product not found");
   }
 
-  if (isProductExist.status === ProductStatusEnum.COMPLETED) {
+  if (isProductExist.status === ProductStatusEnum.COMPLETED || isProductExist.status === ProductStatusEnum.PARTIAL_COMPLETED) {
+    log(`Product is already completed or partially completed: ${id}: Status: ${isProductExist.status}`);
     const finalResult = await prisma.aiGeneratedProduct.findUnique({
       where: {
         productId: id,
@@ -1245,6 +1247,188 @@ const getProduct = async (userId: string, id: string) => {
     return finalResult;
   }
 
+  if(isProductExist.status === ProductStatusEnum.DELETED) {
+    // throw new ApiError(403, "This product is deleted already");
+    console.log(`This product is deleted already: ${id}: Status: ${isProductExist.status}`);
+
+  const response = await axios.get(
+    `${process.env.AI_API}/${isProductExist.productId}`,
+    {},
+  );
+
+  let isStatusCompleted = false;
+  let count = 0
+  response?.data?.images_batch.map(async (item: any) => {
+    if(item.status === "completed") {
+      isStatusCompleted = true;
+      count++;
+    }
+  })
+  console.log(`is Status Completed: ${isStatusCompleted}: ${count} / ${response?.data?.images_batch.length}`);
+  
+  if(isStatusCompleted) {
+    log(`Product is completed: ${id}: Status: ${isProductExist.status}`);
+    const document = await prisma.document.create({
+      data: {
+        userId,
+        aiGenerated: response?.data,
+        mode: isProductExist.mode,
+      },
+    });
+
+    // Promise.all preserves the order of its input array in the returned
+    // array, regardless of which promise settles first — pushing ids from
+    // inside each concurrent callback instead (the previous approach) does
+    // not, since concurrent DB writes can complete in any order.
+    // const generatedImageId: string[] = await Promise.all(
+    //   response?.data?.images_batch.map(async (item: any) => {
+    //     // if(item?.status !== "completed") {
+    //     //   return null;
+    //     // }
+
+    //     if(item?.status === "completed") {
+    //       const image = await prisma.generatedImage.create({
+    //         data: {
+    //           userId,
+    //           imageDetails: item,
+    //           mode: isProductExist.mode,
+    //         },
+    //       });
+
+    //       return image.id;
+    //     }
+    //   }),
+    // );
+
+    const generatedImageId: string[] = (
+  await Promise.all(
+    response?.data?.images_batch.map(async (item: any) => {
+      if (item?.status !== "completed") {
+        return null;
+      }
+
+      const image = await prisma.generatedImage.create({
+        data: {
+          userId,
+          imageDetails: item,
+          mode: isProductExist.mode,
+        },
+      });
+
+      return image.id;
+    }),
+  )
+).filter((id): id is string => id !== null);
+
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        totalCreatedProducts: {
+          increment: isProductExist.product,
+        },
+        totalGeneratedProducts: {
+          increment: isProductExist.generatedImages,
+        },
+        totalSavedTimes: {
+          increment: isProductExist.totalSavedTimes,
+        },
+      },
+    });
+
+    await prisma.productStatus.update({
+      where: {
+        id,
+      },
+      data: {
+        status: ProductStatusEnum.PARTIAL_COMPLETED,
+      },
+    });
+
+    const finalResult = await prisma.aiGeneratedProduct.create({
+      data: {
+        userId,
+        productId: id,
+        document: document,
+        generatedImageId,
+        mode: isProductExist.mode,
+      },
+    });
+
+    return { document, generatedImageId, finalResult };
+  }
+
+  // return response.data;
+
+    // const document = await prisma.document.create({
+    //   data: {
+    //     userId,
+    //     aiGenerated: response?.data,
+    //     mode: isProductExist.mode,
+    //   },
+    // });
+
+    // Promise.all preserves the order of its input array in the returned
+    // array, regardless of which promise settles first — pushing ids from
+    // inside each concurrent callback instead (the previous approach) does
+    // not, since concurrent DB writes can complete in any order.
+    // const generatedImageId: string[] = await Promise.all(
+    //   response?.data?.images_batch.map(async (item: any) => {
+        // const image = await prisma.generatedImage.create({
+        //   data: {
+        //     userId,
+        //     imageDetails: item,
+        //     mode: isProductExist.mode,
+        //   },
+        // });
+
+        // console.log(item);
+        
+
+        // return image.id;
+      // }),
+    // );
+
+    // await prisma.user.update({
+    //   where: {
+    //     id: userId,
+    //   },
+    //   data: {
+    //     totalCreatedProducts: {
+    //       increment: isProductExist.product,
+    //     },
+    //     totalGeneratedProducts: {
+    //       increment: isProductExist.generatedImages,
+    //     },
+    //     totalSavedTimes: {
+    //       increment: isProductExist.totalSavedTimes,
+    //     },
+    //   },
+    // });
+
+    // await prisma.productStatus.update({
+    //   where: {
+    //     id,
+    //   },
+    //   data: {
+    //     status: ProductStatusEnum.COMPLETED,
+    //   },
+    // });
+
+    // const finalResult = await prisma.aiGeneratedProduct.create({
+    //   data: {
+    //     userId,
+    //     productId: id,
+    //     document: document,
+    //     generatedImageId,
+    //     mode: isProductExist.mode,
+    //   },
+    // });
+
+    // return { document, generatedImageId, "finalResult": "as" };
+  }
+
   const response = await axios.get(
     `${process.env.AI_API}/${isProductExist.productId}`,
     {
@@ -1252,7 +1436,7 @@ const getProduct = async (userId: string, id: string) => {
     },
   );
 
-  console.log("response", response.data);
+  // console.log("response", response.data);
 
   if (response.data.status === "completed") {
     const document = await prisma.document.create({
@@ -1280,10 +1464,6 @@ const getProduct = async (userId: string, id: string) => {
         return image.id;
       }),
     );
-
-    // response?.data.product?.images_batch.forEach((item: any) => {
-    //   generatedImages++;
-    // });
 
     await prisma.user.update({
       where: {
@@ -1340,7 +1520,7 @@ const deleteProduct = async (userId: string, id: string) => {
     throw new ApiError(404, "Product not found");
   }
 
-  if (isProductExist.status === ProductStatusEnum.DELETED) {
+  if (isProductExist.status === ProductStatusEnum.DELETED || isProductExist.status === ProductStatusEnum.PARTIAL_COMPLETED) {
     throw new ApiError(403, "This product is deleted already");
   }
 
@@ -1376,76 +1556,6 @@ const deleteProduct = async (userId: string, id: string) => {
       },
     });
   }
-
-  // if (response.data.status === "completed") {
-  //   const document = await prisma.document.create({
-  //     data: {
-  //       userId,
-  //       aiGenerated: response?.data,
-  //       mode: isProductExist.mode,
-  //     },
-  //   });
-
-  //   // Promise.all preserves the order of its input array in the returned
-  //   // array, regardless of which promise settles first — pushing ids from
-  //   // inside each concurrent callback instead (the previous approach) does
-  //   // not, since concurrent DB writes can complete in any order.
-  //   const generatedImageId: string[] = await Promise.all(
-  //     response?.data?.images_batch.map(async (item: any) => {
-  //       const image = await prisma.generatedImage.create({
-  //         data: {
-  //           userId,
-  //           imageDetails: item,
-  //           mode: isProductExist.mode,
-  //         },
-  //       });
-
-  //       return image.id;
-  //     }),
-  //   );
-
-  //   // response?.data.product?.images_batch.forEach((item: any) => {
-  //   //   generatedImages++;
-  //   // });
-
-  //   await prisma.user.update({
-  //     where: {
-  //       id: userId,
-  //     },
-  //     data: {
-  //       totalCreatedProducts: {
-  //         increment: isProductExist.product,
-  //       },
-  //       totalGeneratedProducts: {
-  //         increment: isProductExist.generatedImages,
-  //       },
-  //       totalSavedTimes: {
-  //         increment: isProductExist.totalSavedTimes,
-  //       },
-  //     },
-  //   });
-
-  //   await prisma.productStatus.update({
-  //     where: {
-  //       id,
-  //     },
-  //     data: {
-  //       status: ProductStatusEnum.COMPLETED,
-  //     },
-  //   });
-
-  //   const finalResult = await prisma.aiGeneratedProduct.create({
-  //     data: {
-  //       userId,
-  //       productId: id,
-  //       document: document,
-  //       generatedImageId,
-  //       mode: isProductExist.mode,
-  //     },
-  //   });
-
-  //   return { document, generatedImageId, finalResult };
-  // }
 
   return response.data;
 };
