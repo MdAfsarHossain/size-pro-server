@@ -341,6 +341,7 @@ model ModelPosition {
 enum ProductStatusEnum {
   PENDING
   COMPLETED
+  DELETED
 }
 
 model ProductStatus {

@@ -1327,6 +1327,129 @@ const getProduct = async (userId: string, id: string) => {
   return response.data;
 };
 
+const deleteProduct = async (userId: string, id: string) => {
+  const isProductExist = await prisma.productStatus.findUnique({
+    where: {
+      id,
+    },
+  });
+
+  // console.log("productStatus", isProductExist);
+
+  if (!isProductExist) {
+    throw new ApiError(404, "Product not found");
+  }
+
+  if (isProductExist.status === ProductStatusEnum.DELETED) {
+    throw new ApiError(403, "This product is deleted already");
+  }
+
+  // if (isProductExist.status === ProductStatusEnum.COMPLETED) {
+  //   const finalResult = await prisma.aiGeneratedProduct.findUnique({
+  //     where: {
+  //       productId: id,
+  //     },
+  //     select: {
+  //       document: true,
+  //       generatedImageId: true,
+  //     },
+  //   });
+  //   return finalResult;
+  // }
+
+  const response = await axios.delete(
+    `${process.env.AI_API}/${isProductExist.productId}`,
+    {
+      // params: { product_id: productId },
+    },
+  );
+
+  console.log("response", response.data);
+
+  if (response.data.deleted) {
+    await prisma.productStatus.update({
+      where: {
+        id,
+      },
+      data: {
+        status: ProductStatusEnum.DELETED,
+      },
+    });
+  }
+
+  // if (response.data.status === "completed") {
+  //   const document = await prisma.document.create({
+  //     data: {
+  //       userId,
+  //       aiGenerated: response?.data,
+  //       mode: isProductExist.mode,
+  //     },
+  //   });
+
+  //   // Promise.all preserves the order of its input array in the returned
+  //   // array, regardless of which promise settles first — pushing ids from
+  //   // inside each concurrent callback instead (the previous approach) does
+  //   // not, since concurrent DB writes can complete in any order.
+  //   const generatedImageId: string[] = await Promise.all(
+  //     response?.data?.images_batch.map(async (item: any) => {
+  //       const image = await prisma.generatedImage.create({
+  //         data: {
+  //           userId,
+  //           imageDetails: item,
+  //           mode: isProductExist.mode,
+  //         },
+  //       });
+
+  //       return image.id;
+  //     }),
+  //   );
+
+  //   // response?.data.product?.images_batch.forEach((item: any) => {
+  //   //   generatedImages++;
+  //   // });
+
+  //   await prisma.user.update({
+  //     where: {
+  //       id: userId,
+  //     },
+  //     data: {
+  //       totalCreatedProducts: {
+  //         increment: isProductExist.product,
+  //       },
+  //       totalGeneratedProducts: {
+  //         increment: isProductExist.generatedImages,
+  //       },
+  //       totalSavedTimes: {
+  //         increment: isProductExist.totalSavedTimes,
+  //       },
+  //     },
+  //   });
+
+  //   await prisma.productStatus.update({
+  //     where: {
+  //       id,
+  //     },
+  //     data: {
+  //       status: ProductStatusEnum.COMPLETED,
+  //     },
+  //   });
+
+  //   const finalResult = await prisma.aiGeneratedProduct.create({
+  //     data: {
+  //       userId,
+  //       productId: id,
+  //       document: document,
+  //       generatedImageId,
+  //       mode: isProductExist.mode,
+  //     },
+  //   });
+
+  //   return { document, generatedImageId, finalResult };
+  // }
+
+  return response.data;
+};
+
 export const DocumentServices = {
   createDocument,
   myAllDocuments,
@@ -1337,4 +1460,5 @@ export const DocumentServices = {
   generateCSV,
   getProduct,
   uploadProductToAI,
+  deleteProduct,
 };

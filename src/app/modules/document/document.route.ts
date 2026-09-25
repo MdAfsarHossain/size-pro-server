@@ -27,6 +27,13 @@ route.post(
   DocumentControllers.uploadProductToAI,
 );
 
+// Delete Product
+route.delete(
+  "/product/:id",
+  auth(Role.ADMIN, Role.SUPERADMIN),
+  DocumentControllers.deleteProduct,
+);
+
 // My All Documents
 route.get(
   "/",
