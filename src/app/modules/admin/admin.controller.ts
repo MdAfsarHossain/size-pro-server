@@ -11,6 +11,7 @@ const getAllAdmin = catchAsync(async (req: Request, res: Response) => {
   // console.log(page, limit);
 
   const result = await AdminServices.getAllAdmin(
+    req.user.role,
     page as string,
     limit as string,
   );
@@ -30,6 +31,7 @@ const getSingleAdmin = catchAsync(async (req: Request, res: Response) => {
   const { page, limit, searchTerm } = req.query;
 
   const result = await AdminServices.getSingleAdmin(
+    req.user.role,
     id,
     page as string,
     limit as string,
@@ -49,7 +51,7 @@ const getSingleAdmin = catchAsync(async (req: Request, res: Response) => {
 const removeAdmin = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  const result = await AdminServices.removeAdmin(id);
+  const result = await AdminServices.removeAdmin(req.user.role, id);
 
   sendResponse(res, {
     success: true,

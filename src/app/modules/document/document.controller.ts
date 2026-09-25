@@ -188,6 +188,21 @@ const getProduct = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// Delete Product
+const deleteProduct = catchAsync(async (req: Request, res: Response) => {
+  const { id: userId } = req.user;
+  const { id } = req.params;
+
+  const result = await DocumentServices.deleteProduct(userId, id);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Product deleted successfully",
+    data: result,
+  });
+});
+
 export const DocumentControllers = {
   createDocument,
   myAllDocuments,
@@ -198,4 +213,5 @@ export const DocumentControllers = {
   generateCSV,
   getProduct,
   uploadProductToAI,
+  deleteProduct,
 };
